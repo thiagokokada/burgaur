@@ -1,6 +1,6 @@
 # Maintainer: Thiago Kenji Okada <thiago DOT mast3r AT gmail DOT com>
 
-pkgname="burguer-git"
+pkgname="burguer"
 pkgver=0.1
 pkgrel=1
 pkgdesc="A delicious AUR helper. Made from cower."
@@ -8,17 +8,11 @@ arch=('i686' 'x86_64')
 url="https://github.com/m45t3r/burguer"
 license=('MIT')
 depends=('cower' 'pacman' 'python')
-source=("git+${url}")
+source=("${pkgver}::git+${url}")
 md5sums=('SKIP')
-provides=("burguer")
-
-pkgver() {
-  cd "burguer"
-  git describe --always | sed 's/-/./g'
-}
 
 package() {
-  cd "${srcdir}/burguer"
+  cd "${srcdir}/${pkgname}"
   python setup.py install --root="${pkgdir}/"
 }
 
