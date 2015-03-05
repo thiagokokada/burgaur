@@ -154,10 +154,12 @@ def force_update(target, non_interactive=False):
             query = query_yes_no("Do you want to update {}?".format(package),
                                  default="yes")
         if query:
-            make_install(package, non_interactive=non_interactive)
+            make_install(package, non_interactive=non_interactive,
+                         _ignore_error=True)
 
 
-def make_install(package, install_deps=False, non_interactive=False):
+def make_install(package, install_deps=False, non_interactive=False,
+                 _ignore_error = False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
@@ -173,6 +175,8 @@ def make_install(package, install_deps=False, non_interactive=False):
     name on AUR)
     non_interactive -- skip interactive prompts during install process;
     WARNING: possibly unsafe
+    _ignore_error -- continue even if an error occurred (for internal
+    use)
     """
     tempdir = mkdtemp(dir=TARGET_DIR)
     os.chdir(tempdir)
@@ -205,7 +209,8 @@ def make_install(package, install_deps=False, non_interactive=False):
             view_in_mc(package)
         subprocess.check_call(makepkg_cmd)
     except subprocess.CalledProcessError:
-        sys.exit("Error while installing package {}.".format(package))
+        if not _ignore_error:
+            sys.exit("Error while installing package {}.".format(package))
     finally:
         rmtree(tempdir)
 
