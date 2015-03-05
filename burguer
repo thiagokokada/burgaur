@@ -46,6 +46,7 @@ MC_PATH = find_executable("mc") # mc is an optional dependency
 TARGET_DIR = os.getenv("BURGUER_TARGET_DIR", "/var/tmp")
 
 
+# Auxiliary functions
 def query_yes_no(question, default = None):
     """Ask a yes/no question via input() and return their answer.
 
@@ -79,6 +80,20 @@ def query_yes_no(question, default = None):
         else:
             print("Please respond with (y)es or (n)o.")
 
+def view_in_mc(package, directory = "."):
+    """"View package contents with Midnight Commander.
+
+    Keyword arguments:
+    package -- package name
+    directory -- directory to open in mc (default: ".")
+    """
+    if MC_PATH: # only runs if mc is installed, otherwise ignore it
+        query = query_yes_no("Do you want to view package contents in mc?",
+                             default = "yes")
+        if query:
+            subprocess.call([MC_PATH, directory])
+
+# AUR related functions
 def check_updates():
     """Check available updates for AUR packages.
     
@@ -102,40 +117,7 @@ def check_updates():
     else:
         sys.exit("Error while trying to check for updates")
 
-def search_package(target):
-    """Search a package based on passed target.
-
-    For now, this is basically a wrapper around 'cower --search' AND
-    'cower --msearch' at the same time, running two subprocess in
-    parallel. This may be completely overkill, but it works.
-
-    Keyword arguments:
-    target -- desired target (maybe a package name, it's description,
-    current maintainer, etc.)
-    """
-    cmd_search = COWER_CMD + ["--search", target]
-    p_search = subprocess.Popen(cmd_search)
-    
-    cmd_msearch = COWER_CMD + ["--msearch", target]
-    p_msearch = subprocess.Popen(cmd_msearch)
-
-    p_search.communicate()
-    p_msearch.communicate()
-
-def view_in_mc(package, directory = "."):
-    """"View package contents with Midnight Commander.
-
-    Keyword arguments:
-    package -- package name
-    directory -- directory to open in mc (default: ".")
-    """
-    if MC_PATH: # only runs if mc is installed, otherwise ignore it
-        query = query_yes_no("Do you want to view package contents in mc?",
-                             default = "yes")
-        if query:
-            subprocess.call([MC_PATH, directory])
-
-def install_package(package, install_deps = False, non_interactive = False):
+def make_install(package, install_deps = False, non_interactive = False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
@@ -187,20 +169,41 @@ def install_package(package, install_deps = False, non_interactive = False):
     finally:
         rmtree(tempdir)
 
-def update_packages(non_interactive = False):
+def system_update(non_interactive = False):
     """Updates all AUR packages that have updates
 
     Keyword arguments:
-    non_interactive -- see install_package function (default: False)
+    non_interactive -- see make_install function (default: False)
     """
     packages = check_updates()
     if packages:
         for package in packages:
-            install_package(package, False, non_interactive)
+            make_install(package, False, non_interactive)
     else:
         print("All packages are up-to-date.")
         sys.exit()
 
+def super_search(target):
+    """Search a package based on passed target.
+
+    For now, this is basically a wrapper around 'cower --search' AND
+    'cower --msearch' at the same time, running two subprocess in
+    parallel. This may be completely overkill, but it works.
+
+    Keyword arguments:
+    target -- desired target (maybe a package name, it's description,
+    current maintainer, etc.)
+    """
+    cmd_search = COWER_CMD + ["--search", target]
+    p_search = subprocess.Popen(cmd_search)
+    
+    cmd_msearch = COWER_CMD + ["--msearch", target]
+    p_msearch = subprocess.Popen(cmd_msearch)
+
+    p_search.communicate()
+    p_msearch.communicate()
+
+# main() and auxiliary functions
 def _argparser():
     """Print and parse arguments"""
     url = "http://www.retrojunkie.com/asciiart/food/burgers.htm"
@@ -260,11 +263,11 @@ def main():
 
     try:
         if package:
-            install_package(package, True, non_interactive)
+            make_install(package, True, non_interactive)
         if target:
-            search_package(target)
+            super_search(target)
         if system_update:
-            update_packages(non_interactive)
+            system_update(non_interactive)
     except KeyboardInterrupt:
         sys.exit("\nUser cancelled operation.")
 
