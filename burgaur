@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-"""burguer - A delicious AUR helper. Made from cower.
+"""burgaur - A delicious AUR helper. Made from cower.
 
-Burguer is strictly a superset of cower. It automates of boring tasks
+Burgaur is strictly a superset of cower. It automates of boring tasks
 that in cower you need to do by hand, like updating all your AUR system
 packages or installing a new package from AUR including its
 dependencies.
@@ -46,8 +46,8 @@ MC_PATH = find_executable("mc")  # mc is an optional dependency
 ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
 # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
 # big packages completely on RAM, so by default we use /var/tmp. Anyway, the
-# user can overrides this setting by setting env variable BURGUER_TARGET_DIR.
-TARGET_DIR = os.getenv("BURGUER_TARGET_DIR", "/var/tmp")
+# user can overrides this setting by setting env variable BURGAUR_TARGET_DIR.
+TARGET_DIR = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
 
 
 # Auxiliary functions
@@ -178,12 +178,12 @@ def make_install(package, install_deps=False, non_interactive=False,
     _ignore_error -- continue even if an error occurred (for internal
     use)
     """
-    tempdir = mkdtemp(dir=TARGET_DIR)
-    os.chdir(tempdir)
+    target_dir = mkdtemp(dir=TARGET_DIR)
+    os.chdir(target_dir)
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
                              "--download", package,
-                             "--target", tempdir]
+                             "--target", target_dir]
     if install_deps:
         cower_cmd += ["--download"]
 
@@ -198,7 +198,7 @@ def make_install(package, install_deps=False, non_interactive=False,
                 if not non_interactive:
                     view_in_mc(dep)
                 subprocess.check_call(makepkg_cmd)
-                os.chdir(tempdir)
+                os.chdir(target_dir)
             except subprocess.CalledProcessError:
                 # Pass the current package name for user error message
                 package = dep
@@ -212,7 +212,7 @@ def make_install(package, install_deps=False, non_interactive=False,
         if not _ignore_error:
             sys.exit("Error while installing package {}.".format(package))
     finally:
-        rmtree(tempdir)
+        rmtree(target_dir)
 
 
 def system_update(non_interactive=False):
