@@ -222,6 +222,7 @@ def system_update(non_interactive=False):
     non_interactive -- see make_install function (default: False)
     """
     packages = check_updates()
+    print(packages)
     if packages:
         for package in packages:
             if non_interactive:
@@ -230,7 +231,8 @@ def system_update(non_interactive=False):
                 query = query_yes_no("Do you want to update {}?"
                                      .format(package), default="yes")
             if query:
-                make_install(package, False, non_interactive)
+                make_install(package, non_interactive=non_interactive,
+                             _ignore_error=True)
     else:
         print("All packages are up-to-date.")
         sys.exit()
