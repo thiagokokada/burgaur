@@ -318,7 +318,7 @@ def main():
         sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
     if args.non_interactive and not MC_PATH:
         print("Midnight Commander is not installed. "
-              "Ignoring --non-interactive.")
+              "Ignoring --non-interactive.", file=sys.stderr)
 
     try:
         if args.force_update:
