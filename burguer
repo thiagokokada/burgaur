@@ -13,14 +13,6 @@ tries to complement other tools.
 
 """
 
-__author__ = "Thiago Kenji Okada"
-__license__ = "MIT"
-__version__ = "0.1"
-__maintainer__ = "Thiago Kenji Okada"
-__email__ = "thiago DOT mast3r AT gmail DOT com"
-__status__ = "Development"
-
-
 import argparse
 import os
 import subprocess
@@ -29,6 +21,13 @@ from distutils.spawn import find_executable
 from shutil import rmtree
 from tempfile import mkdtemp
 from textwrap import dedent
+
+__author__ = "Thiago Kenji Okada"
+__license__ = "MIT"
+__version__ = "0.1"
+__maintainer__ = "Thiago Kenji Okada"
+__email__ = "thiago DOT mast3r AT gmail DOT com"
+__status__ = "Development"
 
 COWER_URL = "https://aur.archlinux.org/packages/cower/"
 MAKEPKG_PATH = find_executable("makepkg")
@@ -39,7 +38,7 @@ if not COWER_PATH:
     sys.exit("Could not find cower installed. Install it from {}"
              .format(COWER_URL))
 COWER_CMD = [COWER_PATH]
-MC_PATH = find_executable("mc") # mc is an optional dependency
+MC_PATH = find_executable("mc")  # mc is an optional dependency
 # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
 # big packages completely on RAM, so by default we use /var/tmp. Anyway, the
 # user can overrides this setting by setting env variable BURGUER_TARGET_DIR.
@@ -47,7 +46,7 @@ TARGET_DIR = os.getenv("BURGUER_TARGET_DIR", "/var/tmp")
 
 
 # Auxiliary functions
-def query_yes_no(question, default = None):
+def query_yes_no(question, default=None):
     """Ask a yes/no question via input() and return their answer.
 
     Return True in case of "yes" and False in case of "no".
@@ -71,7 +70,7 @@ def query_yes_no(question, default = None):
         raise ValueError("Invalid default answer: {}".format(default))
 
     while True:
-        print("{}{}".format(question, prompt), end = "")
+        print("{}{}".format(question, prompt), end="")
         choice = input().lower()
         if default is not None and choice == '':
             return valid[default]
@@ -80,32 +79,34 @@ def query_yes_no(question, default = None):
         else:
             print("Please respond with (y)es or (n)o.")
 
-def view_in_mc(package, directory = "."):
+
+def view_in_mc(package, directory="."):
     """"View package contents with Midnight Commander.
 
     Keyword arguments:
     package -- package name
     directory -- directory to open in mc (default: ".")
     """
-    if MC_PATH: # only runs if mc is installed, otherwise ignore it
+    if MC_PATH:  # only runs if mc is installed, otherwise ignore it
         query = query_yes_no("Do you want to view package contents in mc?",
-                             default = "yes")
+                             default="yes")
         if query:
             subprocess.call([MC_PATH, directory])
+
 
 # AUR related functions
 def check_updates():
     """Check available updates for AUR packages.
-    
+
     In case of sucess it returns a list of strings with each package
     that can be updated or None if there is no update available.
     In case of error it force exit with return code 1, including a user
     friendly message.
     """
     cmd = COWER_CMD + ["--color=never", "--update", "--quiet"]
-    process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     out, err = process.communicate()
-    
+
     # According to this issue https://github.com/falconindy/cower/issues/32,
     # cower returns 1 if there is packages to update, 0 if there is nothing,
     # and anything else if there is a error.
@@ -117,7 +118,8 @@ def check_updates():
     else:
         sys.exit("Error while trying to check for updates")
 
-def make_install(package, install_deps = False, non_interactive = False):
+
+def make_install(package, install_deps=False, non_interactive=False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
@@ -134,7 +136,7 @@ def make_install(package, install_deps = False, non_interactive = False):
     non_interactive -- skip interactive prompts during install process;
     WARNING: possibly unsafe
     """
-    tempdir = mkdtemp(dir = TARGET_DIR)
+    tempdir = mkdtemp(dir=TARGET_DIR)
     os.chdir(tempdir)
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
@@ -169,7 +171,8 @@ def make_install(package, install_deps = False, non_interactive = False):
     finally:
         rmtree(tempdir)
 
-def system_update(non_interactive = False):
+
+def system_update(non_interactive=False):
     """Updates all AUR packages that have updates
 
     Keyword arguments:
@@ -182,6 +185,7 @@ def system_update(non_interactive = False):
     else:
         print("All packages are up-to-date.")
         sys.exit()
+
 
 def super_search(target):
     """Search a package based on passed target.
@@ -196,19 +200,21 @@ def super_search(target):
     """
     cmd_search = COWER_CMD + ["--search", target]
     p_search = subprocess.Popen(cmd_search)
-    
+
     cmd_msearch = COWER_CMD + ["--msearch", target]
     p_msearch = subprocess.Popen(cmd_msearch)
 
     p_search.communicate()
     p_msearch.communicate()
 
+
 # main() and auxiliary functions
 def _argparser():
     """Print and parse arguments"""
     url = "http://www.retrojunkie.com/asciiart/food/burgers.htm"
     major, minor, micro = sys.version_info[:3]
-    version_info = dedent('''\
+    version_info = dedent(
+        '''\
                           {}
                  _....----"""----...._
               .-'  o    o    o    o   '-.
@@ -226,21 +232,22 @@ def _argparser():
     )
 
     formatter_class = argparse.RawTextHelpFormatter
-    parser = argparse.ArgumentParser(description = "A delicious AUR helper. "
-                                                   "Made from cower.",
-                                     formatter_class = formatter_class)
-    parser.add_argument("-mi", "--make-install", metavar = "PACKAGE",
-                        help = "make and install package from AUR including"
+    parser = argparse.ArgumentParser(description="A delicious AUR helper. "
+                                                 "Made from cower.",
+                                     formatter_class=formatter_class)
+    parser.add_argument("-mi", "--make-install", metavar="PACKAGE",
+                        help="make and install package from AUR including"
                         "\ndependencies")
-    parser.add_argument("-ss", "--super-search", metavar = "TARGET",
-                        help = "cower --search AND --msearch at same time")
-    parser.add_argument("-su", "--system-update", action = "store_true",
-                        help = "update all AUR packages")
-    parser.add_argument("--non-interactive", action = "store_true",
-                        help = "skip interactive prompts during install process"
+    parser.add_argument("-ss", "--super-search", metavar="TARGET",
+                        help="cower --search AND --msearch at same time")
+    parser.add_argument("-su", "--system-update", action="store_true",
+                        help="update all AUR packages")
+    parser.add_argument("--non-interactive", action="store_true",
+                        help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
-    parser.add_argument("--version", action = "version", version = version_info)
+    parser.add_argument("--version", action="version", version=version_info)
     return parser
+
 
 def main():
     """Main program function"""
@@ -273,6 +280,6 @@ def main():
 
 
 if __name__ == "__main__":
-   main()
+    main()
 
 # vim: ts=8 et sw=4 sts=4
