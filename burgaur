@@ -222,7 +222,6 @@ def system_update(non_interactive=False):
     non_interactive -- see make_install function (default: False)
     """
     packages = check_updates()
-    print(packages)
     if packages:
         for package in packages:
             if non_interactive:
