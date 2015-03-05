@@ -1,7 +1,7 @@
 # Maintainer: Thiago Kenji Okada <thiago DOT mast3r AT gmail DOT com>
 
 pkgname="burgaur-git"
-pkgver=0.3
+pkgver=0.3.5.g0eaf70c
 pkgrel=1
 pkgdesc="A delicious AUR helper. Made from cower."
 arch=('any')

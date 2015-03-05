@@ -56,12 +56,13 @@ def query_yes_no(question, default=None):
 
     Return True in case of "yes" and False in case of "no".
 
+    Modified version from http://stackoverflow.com/a/3041990, rewrite
+    some parts to be more Pythonic.
+
     Keyword arguments:
     question -- string present to the user
     default -- default answer if the user just hits enter; None doesn't
     assume anything (default: None).
-
-    Modified version from http://stackoverflow.com/a/3041990
     """
     valid = {"yes": True, "y": True,
              "no": False, "n": False}
@@ -77,11 +78,12 @@ def query_yes_no(question, default=None):
     while True:
         print("{}{}".format(question, prompt), end="")
         choice = input().lower()
-        if default is not None and choice == '':
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
+        try:
+            if choice:
+                return valid[choice]
+            else:
+                return valid[default]
+        except KeyError:
             print("Please respond with (y)es or (n)o.")
 
 
