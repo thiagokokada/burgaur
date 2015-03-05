@@ -251,6 +251,9 @@ def main():
     target = args.super_search
     system_update = args.system_update
     non_interactive = args.non_interactive
+
+    if os.geteuid() == 0:
+        sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
     if non_interactive and not MC_PATH:
         print("Midnight Commander is not installed. "
               "Ignoring --non-interactive.")
