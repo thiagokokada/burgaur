@@ -267,10 +267,10 @@ def _argparser():
     """Print and parse arguments"""
     program_name = os.path.basename(sys.argv[0]).title()
     url = "http://www.retrojunkie.com/asciiart/food/burgers.htm"
-    major, minor, micro = sys.version_info[:3]
+    python_version = sys.version_info[:3]
     version_info = dedent(
         r'''
-                          {}
+                          {0}
                  _....----"""----...._
               .-'  o    o    o    o   '-.
              /  o    o    o         o    \
@@ -281,9 +281,9 @@ def _argparser():
            \~`-`.__.`-~`._.~`-`~.-~.__.~`-`/
             \                             /
              `-._______________________.-'
-        ASCII art from: {}
-        {} {} is proudly served by Python {}.{}.{}.'''.
-        format(__version__, url, program_name, __version__, major, minor, micro)
+        ASCII art from: {1}
+        {2} {3} is proudly served by Python {4}.{5}.{6}.'''.
+        format(__version__, url, program_name, __version__, *python_version)
     )
 
     formatter_class = argparse.RawTextHelpFormatter
