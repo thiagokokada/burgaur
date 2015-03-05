@@ -2,17 +2,18 @@
 
 pkgname="burguer"
 pkgver=0.1
-pkgrel=1
+pkgrel=2
 pkgdesc="A delicious AUR helper. Made from cower."
 arch=('i686' 'x86_64')
 url="https://github.com/m45t3r/burguer"
 license=('MIT')
 depends=('cower' 'pacman' 'python')
-source=("${pkgver}::git+${url}")
+optdepends=('mc: check package contents before operation')
+source=("git+${url}#tag=${pkgver}")
 md5sums=('SKIP')
 
 package() {
-  cd "${srcdir}/${pkgname}"
+  cd "${srcdir}/burguer"
   python setup.py install --root="${pkgdir}/"
 }
 
