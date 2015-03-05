@@ -15,6 +15,7 @@ tries to complement other tools.
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 from distutils.spawn import find_executable
@@ -30,6 +31,9 @@ __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Development"
 
 COWER_URL = "https://aur.archlinux.org/packages/cower/"
+PACMAN_PATH = find_executable("pacman")
+if not PACMAN_PATH:
+    sys.exit("Could not find pacman installed. Are you using Arch Linux?")
 MAKEPKG_PATH = find_executable("makepkg")
 if not MAKEPKG_PATH:
     sys.exit("Could not find makepkg installed. Are you using Arch Linux?")
@@ -39,6 +43,7 @@ if not COWER_PATH:
              .format(COWER_URL))
 COWER_CMD = [COWER_PATH]
 MC_PATH = find_executable("mc")  # mc is an optional dependency
+ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
 # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
 # big packages completely on RAM, so by default we use /var/tmp. Anyway, the
 # user can overrides this setting by setting env variable BURGUER_TARGET_DIR.
@@ -111,12 +116,45 @@ def check_updates():
     # cower returns 1 if there is packages to update, 0 if there is nothing,
     # and anything else if there is a error.
     if process.returncode == 1:
-        packages = out.decode().split("\n")[:-1]
+        packages = out.decode(encoding=ENCODING).split("\n")[:-1]
         return packages
     elif process.returncode == 0:
         return None
     else:
         sys.exit("Error while trying to check for updates")
+
+
+def force_update(target, non_interactive=False):
+    """Force update of packages with target name.
+
+    The user case of this function is to update VCS packages. For
+    example, you could pass target="-git", and since the majority of
+    Git packages on AUR finishes with "-git" prefix it would try to
+    update all of them.
+
+    Since it's impossible to know if VCS packages are up-to-date or not
+    unless we build it and try to install, please doesn't expect any
+    intelligence from using this function.
+
+    target -- a package name or a generic target; support glob
+    expansion
+    non_interactive -- update all packages without asking for user
+    input; affect make_install function too (default: False)
+    """
+    cmd = [PACMAN_PATH, "-Q", "--quiet", "--color", "never"]
+    installed_packages = subprocess.check_output(cmd)
+    installed_packages = installed_packages.decode(encoding=ENCODING)
+    installed_packages = installed_packages.split("\n")[:-1]
+    filtered_packages = filter(lambda x: re.search(target, x),
+                               installed_packages)
+    for package in filtered_packages:
+        if non_interactive:
+            query = True
+        else:
+            query = query_yes_no("Do you want to update {}?".format(package),
+                                 default="yes")
+        if query:
+            make_install(package, non_interactive=non_interactive)
 
 
 def make_install(package, install_deps=False, non_interactive=False):
@@ -214,27 +252,31 @@ def _argparser():
     url = "http://www.retrojunkie.com/asciiart/food/burgers.htm"
     major, minor, micro = sys.version_info[:3]
     version_info = dedent(
-        '''\
+        r'''
                           {}
                  _....----"""----...._
               .-'  o    o    o    o   '-.
-             /  o    o    o         o    \\
-            /     o      o   o     o    o \\
+             /  o    o    o         o    \
+            /     o      o   o     o    o \
           _|   o   o    o      o  o     o  |_
-         / `''-----.................-----''` \\
+         / `''-----.................-----''` \
          \___________________________________/
            \~`-`.__.`-~`._.~`-`~.-~.__.~`-`/
             \                             /
              `-._______________________.-'
-        ASCII art: {}
-        Burguer {} is proudly served by Python {}.{}.{}.'''.
-        format(__version__, url, __version__, major, minor, micro)
+        ASCII art from: {}
+        {} {} is proudly served by Python {}.{}.{}.'''.
+        format(__version__, url, sys.argv[0], __version__, major, minor, micro)
     )
 
     formatter_class = argparse.RawTextHelpFormatter
     parser = argparse.ArgumentParser(description="A delicious AUR helper. "
                                                  "Made from cower.",
                                      formatter_class=formatter_class)
+    parser.add_argument("-fu", "--force-update", metavar="TARGET",
+                        help="force update of installed AUR packages with"
+                        "\ntarget name, useful for updating VCS packages"
+                        "\ni.e. '-fi=-git' should update all Git packages")
     parser.add_argument("-mi", "--make-install", metavar="PACKAGE",
                         help="make and install package from AUR including"
                         "\ndependencies")
@@ -257,24 +299,21 @@ def main():
         sys.exit(1)
     args = parser.parse_args()
 
-    package = args.make_install
-    target = args.super_search
-    system_update = args.system_update
-    non_interactive = args.non_interactive
-
     if os.geteuid() == 0:
         sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
-    if non_interactive and not MC_PATH:
+    if args.non_interactive and not MC_PATH:
         print("Midnight Commander is not installed. "
               "Ignoring --non-interactive.")
 
     try:
-        if package:
-            make_install(package, True, non_interactive)
-        if target:
-            super_search(target)
-        if system_update:
-            system_update(non_interactive)
+        if args.force_update:
+            force_update(args.force_update, args.non_interactive)
+        if args.make_install:
+            make_install(args.make_install, True, non_interactive)
+        if args.super_search:
+            super_search(args.super_search)
+        if args.system_update:
+            system_update(args.non_interactive)
     except KeyboardInterrupt:
         sys.exit("\nUser cancelled operation.")
 
