@@ -16,7 +16,13 @@ For example, instead of running ``cower -ud`` to download the all new PKGBUILDs,
 
     $ burgaur -su
 
-This will update all AUR packages that are currently out-of-date.
+This will update all AUR packages that are currently out-of-date, except for VCS packages like `mpv-git`_. You can update them by using:
+
+::
+
+    $ burgaur -fu=-git
+
+What this command tries to do is forcing an update to all packages that has "-git" in its name. Don't worry about burgaur updating unecessary packages, it will ask for confirmation before doing anything.
 
 To install new packages, instead of doing ``cower -dd random_package``, going into each directory and running ``makepkg -si`` (remember that you need to eventually install AUR dependencies too), you can simple do:
 
@@ -26,13 +32,13 @@ To install new packages, instead of doing ``cower -dd random_package``, going in
 
 And it will do everything for you.
 
-One last trick (at least for now) is using:
+One last trick is using:
 
 ::
 
     $ burgaur -ss target
 
-This is equivalent of doing ``cower -s target && cower -m target``, but a faster since it does both searchs in the same time.
+This is equivalent of doing ``cower -s target && cower -m target``, but it's faster since it does both searchs in the same time.
 
 How to install
 ~~~~~~~~~~~~~~
@@ -54,3 +60,4 @@ This project is based on `cower`_. Thanks falconindy for this amazing piece of p
 
 .. _`cower`: https://aur.archlinux.org/packages/cower/
 .. _`AUR`: https://aur.archlinux.org/packages/burgaur/
+.. _`mpv-git`: https://aur.archlinux.org/packages/mpv-git/
