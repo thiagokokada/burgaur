@@ -159,7 +159,7 @@ def force_update(target, non_interactive=False):
 
 
 def make_install(package, install_deps=False, non_interactive=False,
-                 _ignore_error = False):
+                 _ignore_error=False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
@@ -209,8 +209,10 @@ def make_install(package, install_deps=False, non_interactive=False,
             view_in_mc(package)
         subprocess.check_call(makepkg_cmd)
     except subprocess.CalledProcessError:
+        print("Error while installing package {}.", file=sys.stderr)
         if not _ignore_error:
-            sys.exit("Error while installing package {}.".format(package))
+            sys.exit(1)
+
     finally:
         rmtree(target_dir)
 
