@@ -25,7 +25,7 @@ from textwrap import dedent
 
 __author__ = "Thiago Kenji Okada"
 __license__ = "MIT"
-__version__ = "0.1"
+__version__ = "0.2"
 __maintainer__ = "Thiago Kenji Okada"
 __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Development"
@@ -249,6 +249,7 @@ def super_search(target):
 # main() and auxiliary functions
 def _argparser():
     """Print and parse arguments"""
+    program_name = os.path.basename(sys.argv[0]).title()
     url = "http://www.retrojunkie.com/asciiart/food/burgers.htm"
     major, minor, micro = sys.version_info[:3]
     version_info = dedent(
@@ -266,7 +267,7 @@ def _argparser():
              `-._______________________.-'
         ASCII art from: {}
         {} {} is proudly served by Python {}.{}.{}.'''.
-        format(__version__, url, sys.argv[0], __version__, major, minor, micro)
+        format(__version__, url, program_name, __version__, major, minor, micro)
     )
 
     formatter_class = argparse.RawTextHelpFormatter
