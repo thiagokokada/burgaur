@@ -2,7 +2,7 @@
 
 _reponame="burgaur"
 pkgname="${_reponame}-git"
-pkgver=0.3.10.g1aa9556
+pkgver=0.4
 pkgrel=1
 pkgdesc="A delicious AUR helper. Made from cower."
 arch=('any')
