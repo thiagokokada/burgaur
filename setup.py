@@ -4,6 +4,7 @@ from imp import load_source
 
 burgaur = load_source("burgaur", "burgaur")
 
+
 def read(fname):
     filename = os.path.join(os.path.dirname(__file__), fname)
     return open(filename).read().replace('#', '')
