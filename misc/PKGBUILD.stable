@@ -1,17 +1,17 @@
 # Maintainer: Thiago Kenji Okada <thiago DOT mast3r AT gmail DOT com>
 
-pkgname="burgaur"
+pkgname='burgaur'
 pkgver=0.4
 pkgrel=1
-pkgdesc="A delicious AUR helper. Made from cower."
+pkgdesc='A delicious AUR helper. Made from cower.'
 arch=('any')
 url="https://github.com/m45t3r/burgaur"
 license=('MIT')
 depends=('cower' 'pacman' 'python')
 optdepends=('mc: check package contents before operation')
 source=("${url}/archive/${pkgver}.tar.gz")
-md5sums=('SKIP')
-provides=("burguer")
+sha256sums=('44c7bae76a6923ccd07202e2ef9695092e5c983cfc710a547c07439efc160df2')
+conflicts=('burgaur-git')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
