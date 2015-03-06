@@ -168,17 +168,16 @@ def make_install(package, install_deps=False, non_interactive=False,
     using 'cower -d' and make/install the package using 'makepkg -si'
     command.
 
-    If 'install_deps = True', this function will use 'cower -dd' to
-    download all package dependencies that are in AUR, installing them
-    before the main package.
-
     Keyword arguments:
     package -- desired package to be installed (must match a package
     name on AUR)
+    install_deps -- use cower '-dd' instead of only '-d' to download
+    AUR dependencies and install them before the main package (default:
+    False)
     non_interactive -- skip interactive prompts during install process;
-    WARNING: possibly unsafe
+    WARNING: possibly unsafe (default: False)
     _ignore_error -- continue even if an error occurred (for internal
-    use)
+    use; default: False)
     """
     target_dir = mkdtemp(dir=TARGET_DIR)
     os.chdir(target_dir)
@@ -249,7 +248,7 @@ def super_search(target):
     parallel. This may be completely overkill, but it works.
 
     Keyword arguments:
-    target -- desired target (maybe a package name, it's description,
+    target -- desired target (maybe a package name, its description,
     current maintainer, etc.)
     """
     cmd_search = COWER_CMD + ["--search", target]
