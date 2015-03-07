@@ -384,6 +384,8 @@ def main():
             make_install(args.make_install, True, args.non_interactive)
         if args.super_search:
             super_search(args.super_search)
+        if args.super_search_install:
+            super_search_install(args.super_search_install)
         if args.system_update:
             system_update(args.non_interactive)
     except KeyboardInterrupt:
