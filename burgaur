@@ -261,6 +261,54 @@ def super_search(target):
     p_msearch.communicate()
 
 
+def super_search_install(target):
+    """Search a package based on passed target.
+
+    For now, this is basically a wrapper around 'cower --search' AND
+    'cower --msearch' at the same time, running two subprocess in
+    parallel. This may be completely overkill, but it works. After
+    search results are returned, user has the option to install packages
+    by index number, similar to yaourt.
+
+    Keyword arguments:
+    target -- desired target (maybe a package name, it's description,
+    current maintainer, etc.)
+    """
+    cmd_search = COWER_CMD + ["--search", target]
+    p_search = subprocess.Popen(cmd_search, stdout=subprocess.PIPE)
+    p_search = p_search.communicate()[0]
+    p_search = p_search.decode()
+    p_search_items = p_search.split("aur/")
+    p_search_items.pop(0)
+
+    cmd_msearch = COWER_CMD + ["--msearch", target]
+    p_msearch = subprocess.Popen(cmd_msearch, stdout=subprocess.PIPE)
+    p_msearch = p_msearch.communicate()[0]
+    p_msearch = p_msearch.decode()
+    p_msearch_items = p_msearch.split("aur/")
+    p_msearch_items.pop(0)
+
+    search_items = p_search_items + p_msearch_items
+
+    for i, item in enumerate(search_items, start=1):
+        print("[" + str(i) + "] aur/" + item, end="")
+
+    if len(search_items) > 0:
+        to_install = input("\nEnter packages to install, (0) to exit: ")
+        to_install = to_install.split()
+        for item in to_install:
+            try:
+                int(item)
+                if (int(item) > 0) and (int(item) <= 242):
+                    package = search_items[int(item) - 1]
+                    package = re.search(r"(?<=.{8})([^\s]+)", package).group(1)
+                    make_install(package)
+                else:
+                    print("Error:", item, "is not a valid package index.")
+            except:
+                print("Error:", item, "is not a valid package index.")
+
+
 # main() and auxiliary functions
 def _argparser():
     """Print and parse arguments"""
@@ -308,6 +356,10 @@ def _argparser():
     search.add_argument("-ss", "--super-search", metavar="TARGET",
                         help="search packages by description, name and/or"
                         "\nmaintainer")
+    search.add_argument("-ssi", "--super-search-install", metavar="TARGET",
+                        help="search packages by description, name and/or"
+                        "\nmaintainer. Install packages according to package"
+                        "index.")
     return parser
 
 
