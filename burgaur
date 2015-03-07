@@ -286,24 +286,28 @@ def _argparser():
     )
 
     formatter_class = argparse.RawTextHelpFormatter
-    parser = argparse.ArgumentParser(description="A delicious AUR helper. "
-                                                 "Made from cower.",
+    description = "A delicious AUR helper. Made from cower."
+    parser = argparse.ArgumentParser(description=description,
                                      formatter_class=formatter_class)
-    parser.add_argument("-fu", "--force-update", metavar="TARGET",
-                        help="force update of installed AUR packages with"
-                        "\ntarget name, useful for updating VCS packages"
-                        "\ni.e. '-fi=-git' should update all Git packages")
-    parser.add_argument("-mi", "--make-install", metavar="PACKAGE",
-                        help="make and install package from AUR including"
-                        "\ndependencies")
-    parser.add_argument("-ss", "--super-search", metavar="TARGET",
-                        help="cower --search AND --msearch at same time")
-    parser.add_argument("-su", "--system-update", action="store_true",
-                        help="update all AUR packages")
     parser.add_argument("--non-interactive", action="store_true",
                         help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
     parser.add_argument("--version", action="version", version=version_info)
+    update = parser.add_argument_group("update")
+    update.add_argument("-fu", "--force-update", metavar="TARGET",
+                        help="force update of installed AUR packages with"
+                        "\ntarget name, useful for updating VCS packages"
+                        "\ni.e. '-fi=-git' should update all Git packages")
+    update.add_argument("-su", "--system-update", action="store_true",
+                        help="update all AUR packages")
+    install = parser.add_argument_group("install")
+    install.add_argument("-mi", "--make-install", metavar="PACKAGE",
+                         help="make and install package from AUR including"
+                         "\ndependencies")
+    search = parser.add_argument_group("search")
+    search.add_argument("-ss", "--super-search", metavar="TARGET",
+                        help="search packages by description, name and/or"
+                        "\nmaintainer")
     return parser
 
 
