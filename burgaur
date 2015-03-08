@@ -243,8 +243,8 @@ def system_update(non_interactive=False):
 def search(target):
     """Search a package based on passed target.
 
-    This function is used when super+search and search_install are
-    called.
+    This function is used when super_search and search_install are
+    called. Returns a list of search results.
 
     Keyword arguments:
     target -- desired target (maybe a package name, its description,
@@ -282,7 +282,7 @@ def super_search(target):
     """
     results_list = search(target)
 
-    print("\x1b[1;35m") #adds formatting for first item
+    print("\x1b[1;35m", end="") #adds formatting for first item
     for i, item in enumerate(results_list):
         if (i != 0) and (i < (len(results_list) - 1)):
             print("aur/{}".format(item), end="")
@@ -293,8 +293,7 @@ def search_install(target):
     by index number.
 
     For now, this is basically a wrapper around 'cower --search' AND
-    'cower --msearch' at the same time, running two subprocess in
-    parallel. This may be completely overkill, but it works.
+    'cower --msearch' at the same time, with the option to install.
     Returns a numbered list of packages and gives user the option to install
     packages according to package number, similar to yaourt. User can install
     multiple packages at once by inputting package numbers separated by a
@@ -306,7 +305,7 @@ def search_install(target):
     """
     results_list = search(target)
 
-    print("\x1b[1;35m") #adds formatting for first item
+    print("\x1b[1;35m", end="") #adds formatting for first item
     for i, item in enumerate(results_list):
         if (i != 0) and (i < (len(results_list) - 1)):
             print("[{}] aur/{}".format(i, item), end="")
@@ -376,8 +375,8 @@ def _argparser():
                         "\nmaintainer")
     search.add_argument("-si", "--search-install", metavar="TARGET",
                         help="search packages by description, name and/or"
-                        "\nmaintainer. Install packages according to package"
-                        "index.")
+                        "\nmaintainer and option to install packages according"
+                        "\nto package index.")
     return parser
 
 
