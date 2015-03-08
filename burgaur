@@ -44,6 +44,7 @@ if not COWER_PATH:
 COWER_CMD = [COWER_PATH]
 MC_PATH = find_executable("mc")  # mc is an optional dependency
 ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
+FONT_COLOR = {"boldmagenta": "\x1b[1;35m"}
 # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
 # big packages completely on RAM, so by default we use /var/tmp. Anyway, the
 # user can overrides this setting by setting env variable BURGAUR_TARGET_DIR.
@@ -240,6 +241,35 @@ def system_update(non_interactive=False):
         sys.exit()
 
 
+def search(target):
+    """Search a package based on passed target.
+
+    This function is used when super_search and search_install are
+    called. Returns a list of search results.
+
+    Keyword arguments:
+    target -- desired target (maybe a package name, its description,
+    current maintainer, etc.)
+    """
+    cmd_search = COWER_CMD + ["--search", target]
+    p_search = subprocess.Popen(cmd_search, stdout=subprocess.PIPE)
+
+    cmd_msearch = COWER_CMD + ["--msearch", target]
+    p_msearch = subprocess.Popen(cmd_msearch, stdout=subprocess.PIPE)
+
+    p_search = p_search.communicate()[0]
+    p_search = p_search.decode()
+    p_search_items = p_search.split("\x1b[1;35maur/")
+
+    p_msearch = p_msearch.communicate()[0]
+    p_msearch = p_msearch.decode()
+    p_msearch_items = p_msearch.split("\x1b[1;35maur/")
+
+    search_items = p_search_items + p_msearch_items
+
+    return search_items
+
+
 def super_search(target):
     """Search a package based on passed target.
 
@@ -251,14 +281,48 @@ def super_search(target):
     target -- desired target (maybe a package name, its description,
     current maintainer, etc.)
     """
-    cmd_search = COWER_CMD + ["--search", target]
-    p_search = subprocess.Popen(cmd_search)
+    results_list = search(target)
 
-    cmd_msearch = COWER_CMD + ["--msearch", target]
-    p_msearch = subprocess.Popen(cmd_msearch)
+    for i, item in enumerate(results_list):
+        if (i != 0) and (i < (len(results_list) - 1)):
+            print("{}aur/{}".format(FONT_COLOR["boldmagenta"], item), end="")
 
-    p_search.communicate()
-    p_msearch.communicate()
+
+def search_install(target):
+    """Search a package based on passed target, and option to install packages
+    by index number.
+
+    For now, this is basically a wrapper around 'cower --search' AND
+    'cower --msearch' at the same time, with the option to install.
+    Returns a numbered list of packages and gives user the option to install
+    packages according to package number, similar to yaourt. User can install
+    multiple packages at once by inputting package numbers separated by a
+    space.
+
+    Keyword arguments:
+    target -- desired target (maybe a package name, it's description,
+    current maintainer, etc.)
+    """
+    results_list = search(target)
+
+    for i, item in enumerate(results_list):
+        if (i != 0) and (i < (len(results_list) - 1)):
+            print("{}[{}] aur/{}".format(FONT_COLOR["boldmagenta"], i, item), end="")
+
+    if len(results_list) > 0:
+        to_install = input("\nEnter packages to install, (0) to exit: ")
+        to_install = to_install.split()
+        for item in to_install:
+            try:
+                int(item)
+                if (int(item) > 0) and (int(item) < (len(results_list) - 1)):
+                    package = results_list[int(item)]
+                    package = re.search(r"(?<=.{8})([^\s]+)", package).group(1)
+                    make_install(package)
+                elif int(item) != 0:
+                    print("Error: {} is not a valid package index.".format(item))
+            except ValueError:
+                print("Error: {} is not a valid package index.".format(item))
 
 
 # main() and auxiliary functions
@@ -308,6 +372,10 @@ def _argparser():
     search.add_argument("-ss", "--super-search", metavar="TARGET",
                         help="search packages by description, name and/or"
                         "\nmaintainer")
+    search.add_argument("-si", "--search-install", metavar="TARGET",
+                        help="search packages by description, name and/or"
+                        "\nmaintainer and option to install packages according"
+                        "\nto package index.")
     return parser
 
 
@@ -332,6 +400,8 @@ def main():
             make_install(args.make_install, True, args.non_interactive)
         if args.super_search:
             super_search(args.super_search)
+        if args.search_install:
+            search_install(args.search_install)
         if args.system_update:
             system_update(args.non_interactive)
     except KeyboardInterrupt:
