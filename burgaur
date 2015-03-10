@@ -43,6 +43,11 @@ ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
 tempfile.tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
 
 
+# Internal error class
+class BurgaurError(Exception):
+    pass
+
+
 # Auxiliary functions
 def query_yes_no(question, default=None):
     """Ask a yes/no question via input() and return their answer.
@@ -102,6 +107,8 @@ def check_updates():
     that can be updated or None if there is no update available.
     In case of error it force exit with return code 1, including a user
     friendly message.
+
+    Raises a BurgaurError in case of error.
     """
     cmd = COWER_CMD + ["--color=never", "--update", "--quiet"]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -116,7 +123,7 @@ def check_updates():
     elif process.returncode == 0:
         return None
     else:
-        sys.exit("Error while trying to check for updates")
+        raise BurgaurError("Error while checking for updates.")
 
 
 def force_update(target, non_interactive=False):
@@ -149,17 +156,21 @@ def force_update(target, non_interactive=False):
             query = query_yes_no("Do you want to update {}?".format(package),
                                  default="yes")
         if query:
-            make_install(package, non_interactive=non_interactive,
-                         _ignore_error=True)
+            try:
+                make_install(package, non_interactive=non_interactive)
+            except BurgaurError as e:
+                # Ignore make_install errors in this case
+                print(e, file=sys.stderr)
 
 
-def make_install(package, install_deps=False, non_interactive=False,
-                 _ignore_error=False):
+def make_install(package, install_deps=False, non_interactive=False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
     using 'cower -d' and make/install the package using 'makepkg -si'
     command.
+
+    Raises a BurgaurError in case of error.
 
     Keyword arguments:
     package -- desired package to be installed (must match a package
@@ -169,10 +180,8 @@ def make_install(package, install_deps=False, non_interactive=False,
     False)
     non_interactive -- skip interactive prompts during install process;
     WARNING: possibly unsafe (default: False)
-    _ignore_error -- continue even if an error occurred (for internal
-    use; default: False)
     """
-    target_dir = tempfile.mkdtemp(prefix="burgaur-") 
+    target_dir = tempfile.mkdtemp(prefix="burgaur-")
     os.chdir(target_dir)
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
@@ -203,10 +212,8 @@ def make_install(package, install_deps=False, non_interactive=False,
             view_in_mc(package)
         subprocess.check_call(makepkg_cmd)
     except subprocess.CalledProcessError:
-        print("Error while installing package {}.", file=sys.stderr)
-        if not _ignore_error:
-            sys.exit(1)
-
+        raise BurgaurError("Error while installing package {}."
+                           .format(package))
     finally:
         rmtree(target_dir)
 
@@ -226,8 +233,11 @@ def system_update(non_interactive=False):
                 query = query_yes_no("Do you want to update {}?"
                                      .format(package), default="yes")
             if query:
-                make_install(package, non_interactive=non_interactive,
-                             _ignore_error=True)
+                try:
+                    make_install(package, non_interactive=non_interactive)
+                except BurgaurError as e:
+                    # Ignore make_install errors in this case
+                    print(e, file=sys.stderr)
     else:
         print("All packages are up-to-date.")
 
@@ -310,7 +320,7 @@ def main():
         parser.print_usage()
         sys.exit(1)
     args = parser.parse_args()
-    
+
     # Check dependencies
     if os.geteuid() == 0:
         sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
@@ -334,6 +344,12 @@ def main():
             super_search(args.super_search)
         if args.system_update:
             system_update(args.non_interactive)
+    except BurgaurError as e:
+        if __debug__:
+            import traceback
+            sys.exit(traceback.format_exc())
+        else:
+            sys.exit(e)
     except KeyboardInterrupt:
         sys.exit("\nUser cancelled operation.")
 
