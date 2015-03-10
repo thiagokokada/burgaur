@@ -194,7 +194,7 @@ def make_install(package, install_deps=False, non_interactive=False):
         subprocess.check_call(cower_cmd)
     except subprocess.CalledProcessError:
         raise BurgaurError("Error while downloading package {} or its "
-                           "depedencies".format(package))
+                           "depedencies.".format(package))
     try:
         packages = os.listdir()
         # We remove and append the package in packages list to ensure
