@@ -127,7 +127,7 @@ def check_updates():
 
 
 def force_update(target, non_interactive=False):
-    """Force update of packages with target name.
+    """Force update of packages from AUR with target name.
 
     The user case of this function is to update VCS packages. For
     example, you could pass target="-git", and since the majority of
@@ -143,7 +143,7 @@ def force_update(target, non_interactive=False):
     non_interactive -- update all packages without asking for user
     input; affect make_install function too (default: False)
     """
-    cmd = [PACMAN_PATH, "-Q", "--quiet", "--color", "never"]
+    cmd = [PACMAN_PATH, "-Q", "--foreign", "--quiet", "--color", "never"]
     installed_packages = subprocess.check_output(cmd)
     installed_packages = installed_packages.decode(encoding=ENCODING)
     installed_packages = installed_packages.split("\n")[:-1]
