@@ -18,9 +18,9 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from distutils.spawn import find_executable
 from shutil import rmtree
-from tempfile import mkdtemp, tempdir
 from textwrap import dedent
 
 __author__ = "Thiago Kenji Okada"
@@ -40,7 +40,7 @@ ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
 # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
 # big packages completely on RAM, so by default we use /var/tmp. Anyway, the
 # user can overrides this setting by setting env variable BURGAUR_TARGET_DIR.
-tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
+tempfile.tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
 
 
 # Auxiliary functions
@@ -172,7 +172,7 @@ def make_install(package, install_deps=False, non_interactive=False,
     _ignore_error -- continue even if an error occurred (for internal
     use; default: False)
     """
-    target_dir = mkdtemp()
+    target_dir = tempfile.mkdtemp(prefix="burgaur-") 
     os.chdir(target_dir)
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
