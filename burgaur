@@ -230,7 +230,6 @@ def system_update(non_interactive=False):
                              _ignore_error=True)
     else:
         print("All packages are up-to-date.")
-        sys.exit()
 
 
 def super_search(target):
