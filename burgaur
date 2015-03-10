@@ -32,15 +32,8 @@ __status__ = "Development"
 
 COWER_URL = "https://aur.archlinux.org/packages/cower/"
 PACMAN_PATH = find_executable("pacman")
-if not PACMAN_PATH:
-    sys.exit("Could not find pacman installed. Are you using Arch Linux?")
 MAKEPKG_PATH = find_executable("makepkg")
-if not MAKEPKG_PATH:
-    sys.exit("Could not find makepkg installed. Are you using Arch Linux?")
 COWER_PATH = find_executable("cower")
-if not COWER_PATH:
-    sys.exit("Could not find cower installed. Install it from {}"
-             .format(COWER_URL))
 COWER_CMD = [COWER_PATH]
 MC_PATH = find_executable("mc")  # mc is an optional dependency
 ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
@@ -318,9 +311,17 @@ def main():
         parser.print_usage()
         sys.exit(1)
     args = parser.parse_args()
-
+    
+    # Check dependencies
     if os.geteuid() == 0:
         sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
+    if not PACMAN_PATH:
+        sys.exit("Could not find pacman installed. Are you using Arch Linux?")
+    if not MAKEPKG_PATH:
+        sys.exit("Could not find makepkg installed. Are you using Arch Linux?")
+    if not COWER_PATH:
+        sys.exit("Could not find cower installed. Install it from {}"
+                 .format(COWER_URL))
     if args.non_interactive and not MC_PATH:
         print("Midnight Commander is not installed. "
               "Ignoring --non-interactive.", file=sys.stderr)
