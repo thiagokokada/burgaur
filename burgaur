@@ -93,8 +93,8 @@ def view_in_mc(package, directory="."):
     directory -- directory to open in mc (default: ".")
     """
     if MC_PATH:  # only runs if mc is installed, otherwise ignore it
-        query = query_yes_no("Do you want to view package contents in mc?",
-                             default="yes")
+        query = query_yes_no("Do you want to view package {} contents in mc?"
+                             .format(package), default="yes")
         if query:
             subprocess.call([MC_PATH, directory])
 
@@ -182,7 +182,6 @@ def make_install(package, install_deps=False, non_interactive=False):
     WARNING: possibly unsafe (default: False)
     """
     target_dir = tempfile.mkdtemp(prefix="burgaur-")
-    os.chdir(target_dir)
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
                              "--download", package,
@@ -190,27 +189,24 @@ def make_install(package, install_deps=False, non_interactive=False):
     if install_deps:
         cower_cmd += ["--download"]
 
+    os.chdir(target_dir)
     try:
         subprocess.check_call(cower_cmd)
-        # First lets try to install package dependencies
-        deps = os.listdir()
-        deps.remove(package)
-        for dep in deps:
-            try:
-                os.chdir(dep)
-                if not non_interactive:
-                    view_in_mc(dep)
-                subprocess.check_call(makepkg_cmd)
-                os.chdir(target_dir)
-            except subprocess.CalledProcessError:
-                # Pass the current package name for user error message
-                package = dep
-                raise subprocess.CalledProcessError
-        # Now we try to install the package itself
-        os.chdir(package)
-        if not non_interactive:
-            view_in_mc(package)
-        subprocess.check_call(makepkg_cmd)
+    except subprocess.CalledProcessError:
+        raise BurgaurError("Error while downloading package {} or its "
+                           "depedencies".format(package))
+    try:
+        packages = os.listdir()
+        # We remove and append the package in packages list to ensure
+        # that the dependencies are installed before the main package.
+        packages.remove(package)
+        packages.append(package)
+        for package in packages:
+            os.chdir(package)
+            if not non_interactive:
+                view_in_mc(package)
+            subprocess.check_call(makepkg_cmd)
+            os.chdir(target_dir)
     except subprocess.CalledProcessError:
         raise BurgaurError("Error while installing package {}."
                            .format(package))
