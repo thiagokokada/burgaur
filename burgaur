@@ -291,6 +291,10 @@ def _argparser():
                         help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
     parser.add_argument("--version", action="version", version=version_info)
+    search = parser.add_argument_group("search")
+    search.add_argument("-ss", "--super-search", metavar="TARGET",
+                        help="search packages by description, name and/or"
+                        "\nmaintainer")
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
                         help="force update of installed AUR packages with"
@@ -299,13 +303,9 @@ def _argparser():
     update.add_argument("-su", "--system-update", action="store_true",
                         help="update all AUR packages")
     install = parser.add_argument_group("install")
-    install.add_argument("-mi", "--make-install", metavar="PACKAGE",
+    install.add_argument("-mi", "--make-install", metavar="PACKAGE", nargs="+",
                          help="make and install package from AUR including"
                          "\ndependencies")
-    search = parser.add_argument_group("search")
-    search.add_argument("-ss", "--super-search", metavar="TARGET",
-                        help="search packages by description, name and/or"
-                        "\nmaintainer")
     return parser
 
 
@@ -334,12 +334,12 @@ def main():
     try:
         if args.force_update:
             force_update(args.force_update, args.non_interactive)
-        if args.make_install:
-            make_install(args.make_install, True, args.non_interactive)
         if args.super_search:
             super_search(args.super_search)
         if args.system_update:
             system_update(args.non_interactive)
+        for package in args.make_install:
+            make_install(package, True, args.non_interactive)
     except BurgaurError as e:
         if __debug__:
             import traceback
