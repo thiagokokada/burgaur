@@ -291,6 +291,9 @@ def _argparser():
                         help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
     parser.add_argument("--version", action="version", version=version_info)
+    parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
+                        default=[], help="pass arguments directly to cower"
+                        "\nWARNING: no sanity check, may break thigs")
     search = parser.add_argument_group("search")
     search.add_argument("-ss", "--super-search", metavar="TARGET",
                         help="search packages by description, name and/or"
@@ -331,6 +334,10 @@ def main():
     if args.non_interactive and not MC_PATH:
         print("Midnight Commander is not installed. "
               "Ignoring --non-interactive.", file=sys.stderr)
+
+    # Allow user to pass options directly to cower
+    global COWER_CMD
+    COWER_CMD += args.cower_raw_options
 
     try:
         if args.force_update:
