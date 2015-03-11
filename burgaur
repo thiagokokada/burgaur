@@ -181,6 +181,29 @@ def make_install(package, install_deps=False, non_interactive=False):
     non_interactive -- skip interactive prompts during install process;
     WARNING: possibly unsafe (default: False)
     """
+
+    def _get_package_base(package):
+        """Get package base name.
+
+        This is an ugly hack until this issue is solved:
+        https://github.com/falconindy/cower/issues/105
+
+        Keyword arguments:
+        package -- package to get PackageBase information
+        """
+        cower_cmd = COWER_CMD + ["--color=never", "--info", package]
+        try:
+            out = subprocess.check_output(cower_cmd).decode(ENCODING)
+        except subprocess.CalledProcessError:
+            raise BurgaurError("Error while getting package {} info."
+                               .format(target))
+        result = re.findall(r"PackageBase\s+: (.+)", out)
+        if result:
+            return result[0]
+        else:
+            return None
+
+
     target_dir = tempfile.mkdtemp(prefix="burgaur-")
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
@@ -199,8 +222,21 @@ def make_install(package, install_deps=False, non_interactive=False):
         packages = os.listdir()
         # We remove and append the package in packages list to ensure
         # that the dependencies are installed before the main package.
-        packages.remove(package)
-        packages.append(package)
+        try:
+            packages.remove(package)
+            packages.append(package)
+        except ValueError:
+            # We could remove this try by deciding from _get_package_base
+            # output if there is or not a PackageBase, but _get_package_base
+            # is slow.
+            package_base = _get_package_base(package)
+            if package_base:
+                print("PackageBase {} found.".format(package_base))
+                packages.remove(package_base)
+                packages.append(package_base)
+            else:
+                raise BurgaurError("Directory from package {} not found, and"
+                                   " not a splitted package.".format(package))
         for package in packages:
             os.chdir(package)
             if not non_interactive:
