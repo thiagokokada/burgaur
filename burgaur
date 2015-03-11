@@ -293,7 +293,7 @@ def _argparser():
     parser.add_argument("--version", action="version", version=version_info)
     parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
                         default=[], help="pass arguments directly to cower"
-                        "\nWARNING: no sanity check, may break thigs")
+                        "\nWARNING: no sanity check, may break things")
     search = parser.add_argument_group("search")
     search.add_argument("-ss", "--super-search", metavar="TARGET",
                         help="search packages by description, name and/or"
