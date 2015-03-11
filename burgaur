@@ -303,7 +303,8 @@ def _argparser():
     update.add_argument("-su", "--system-update", action="store_true",
                         help="update all AUR packages")
     install = parser.add_argument_group("install")
-    install.add_argument("-mi", "--make-install", metavar="PACKAGE", nargs="+",
+    install.add_argument("-mi", "--make-install", metavar="PACKAGE",
+                         nargs="+", default=[],
                          help="make and install package from AUR including"
                          "\ndependencies")
     return parser
