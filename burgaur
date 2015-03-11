@@ -238,7 +238,7 @@ def system_update(non_interactive=False):
         print("All packages are up-to-date.")
 
 
-def super_search(target):
+def search_package(target):
     """Search a package based on passed target.
 
     For now, this is basically a wrapper around 'cower --search' AND
@@ -249,14 +249,45 @@ def super_search(target):
     target -- desired target (maybe a package name, its description,
     current maintainer, etc.)
     """
-    cmd_search = COWER_CMD + ["--search", target]
-    p_search = subprocess.Popen(cmd_search)
+    package_info = ["category", "name", "version",
+                   "description", "maintainer", "votes"]
 
-    cmd_msearch = COWER_CMD + ["--msearch", target]
-    p_msearch = subprocess.Popen(cmd_msearch)
+    # package++1.0.0++package description++maintainer++123
+    cmd_search = COWER_CMD + ["--format=%c++%n++%v++%d++%m++%o\n",
+                              "--color", "never",
+                              "--search", target]
+    p_search = subprocess.Popen(cmd_search,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
 
-    p_search.communicate()
-    p_msearch.communicate()
+    cmd_msearch = COWER_CMD + ["--format=%c++%n++%v++%d++%m++%o\n",
+                              "--color", "never",
+                              "--msearch", target]
+    p_msearch = subprocess.Popen(cmd_msearch,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+
+    s_out, s_err = p_search.communicate()
+    m_out, m_err = p_msearch.communicate()
+
+    if s_err or m_err:
+        raise BurgaurError("Error while searching for target {}."
+                           .format(target))
+
+    result = []
+    for package in s_out.decode(ENCODING).split("\n")[:-1]:
+        result.append(dict(zip(package_info, package.split("++"))))
+    return result
+
+
+def super_search(target):
+    for package in search_package(target):
+        print("{}/{} by {} {} ({})\n\t{}".format(package["category"],
+                                                 package["name"],
+                                                 package["maintainer"],
+                                                 package["version"],
+                                                 package["votes"],
+                                                 package["description"]))
 
 
 # main() and auxiliary functions
