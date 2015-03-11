@@ -296,6 +296,7 @@ def _argparser():
     parser.add_argument("--version", action="version", version=version_info)
     search = parser.add_argument_group("search")
     search.add_argument("-ss", "--super-search", metavar="TARGET",
+                        nargs="+", default=[],
                         help="search packages by description, name and/or"
                         "\nmaintainer")
     update = parser.add_argument_group("update")
@@ -341,15 +342,14 @@ def main():
     COWER_CMD += args.cower_raw_options
 
     try:
-        if args.super_search:
-            super_search(args.super_search)
-        if args.system_update:
-            system_update(args.non_interactive)
-        print(args.force_update)
         for target in args.force_update:
             force_update(target, args.non_interactive)
         for package in args.make_install:
             make_install(package, True, args.non_interactive)
+        for target in args.super_search:
+            super_search(target)
+        if args.system_update:
+            system_update(args.non_interactive)
     except BurgaurError as e:
         if __debug__:
             import traceback
