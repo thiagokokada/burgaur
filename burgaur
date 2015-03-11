@@ -287,13 +287,13 @@ def _argparser():
     description = "A delicious AUR helper. Made from cower."
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=formatter_class)
+    parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
+                        default=[], help="pass arguments directly to cower"
+                        "\nWARNING: no sanity check, may break things")
     parser.add_argument("--non-interactive", action="store_true",
                         help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
     parser.add_argument("--version", action="version", version=version_info)
-    parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
-                        default=[], help="pass arguments directly to cower"
-                        "\nWARNING: no sanity check, may break things")
     search = parser.add_argument_group("search")
     search.add_argument("-ss", "--super-search", metavar="TARGET",
                         help="search packages by description, name and/or"
