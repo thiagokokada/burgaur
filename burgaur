@@ -300,6 +300,7 @@ def _argparser():
                         "\nmaintainer")
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
+                        nargs="+", default=[],
                         help="force update of installed AUR packages with"
                         "\ntarget name, useful for updating VCS packages"
                         "\ni.e. '-fi=-git' should update all Git packages")
@@ -340,12 +341,13 @@ def main():
     COWER_CMD += args.cower_raw_options
 
     try:
-        if args.force_update:
-            force_update(args.force_update, args.non_interactive)
         if args.super_search:
             super_search(args.super_search)
         if args.system_update:
             system_update(args.non_interactive)
+        print(args.force_update)
+        for target in args.force_update:
+            force_update(target, args.non_interactive)
         for package in args.make_install:
             make_install(package, True, args.non_interactive)
     except BurgaurError as e:
