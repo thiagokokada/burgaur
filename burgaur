@@ -147,8 +147,12 @@ def force_update(target, non_interactive=False):
     installed_packages = subprocess.check_output(cmd)
     installed_packages = installed_packages.decode(encoding=ENCODING)
     installed_packages = installed_packages.split("\n")[:-1]
-    filtered_packages = filter(lambda x: re.search(target, x),
-                               installed_packages)
+    filtered_packages = list(filter(lambda x: re.search(target, x),
+                                    installed_packages))
+
+    print("Packages to update:", end=" ")
+    print(*filtered_packages, sep=", ")
+
     for package in filtered_packages:
         if non_interactive:
             query = True
@@ -258,6 +262,9 @@ def system_update(non_interactive=False):
     """
     packages = check_updates()
     if packages:
+        print("Packages to update:", end=" ")
+        print(*packages, sep=", ")
+
         for package in packages:
             if non_interactive:
                 query = True
