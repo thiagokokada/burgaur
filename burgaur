@@ -172,7 +172,7 @@ def check_updates():
         raise BurgaurError("Error while checking for updates.")
 
 
-def force_update(target, non_interactive=False):
+def force_update(target, skip_checks=False):
     """Force update of packages from AUR with target name.
 
     The user case of this function is to update VCS packages. For
@@ -186,7 +186,7 @@ def force_update(target, non_interactive=False):
 
     target -- a package name or a generic target; support glob
     expansion
-    non_interactive -- update all packages without asking for user
+    skip_checks -- update all packages without asking for user
     input; affect make_install function too (default: False)
     """
     cmd = [PACMAN_PATH, "-Q", "--foreign", "--quiet", "--color", "never"]
@@ -201,13 +201,13 @@ def force_update(target, non_interactive=False):
 
     for package in filtered_packages:
         try:
-            make_install(package, non_interactive=non_interactive)
+            make_install(package, skip_checks=skip_checks)
         except BurgaurError as e:
             # Ignore make_install errors in this case
             print(e, file=sys.stderr)
 
 
-def make_install(package, install_deps=False, non_interactive=False):
+def make_install(package, install_deps=False, skip_checks=False):
     """Download, make and install package.
 
     This function creates a temporary directory, downloads the PKGBUILD
@@ -222,7 +222,7 @@ def make_install(package, install_deps=False, non_interactive=False):
     install_deps -- use cower '-dd' instead of only '-d' to download
     AUR dependencies and install them before the main package (default:
     False)
-    non_interactive -- skip interactive prompts during install process;
+    skip_checks -- skip interactive prompts during install process;
     WARNING: possibly unsafe (default: False)
     """
 
@@ -247,7 +247,7 @@ def make_install(package, install_deps=False, non_interactive=False):
         else:
             return None
 
-    if not non_interactive:
+    if not skip_checks:
         query = query_yes_no("Do you want to install package {}"
                              .format(package), default="yes")
         if not query:
@@ -288,7 +288,7 @@ def make_install(package, install_deps=False, non_interactive=False):
                                    " not a splitted package.".format(package))
         for package in packages:
             os.chdir(package)
-            if not non_interactive:
+            if not skip_checks:
                 view_in_mc(package)
             subprocess.check_call(makepkg_cmd)
             os.chdir(target_dir)
@@ -299,11 +299,11 @@ def make_install(package, install_deps=False, non_interactive=False):
         rmtree(target_dir)
 
 
-def system_update(non_interactive=False):
+def system_update(skip_checks=False):
     """Updates all AUR packages that have updates.
 
     Keyword arguments:
-    non_interactive -- see make_install function (default: False)
+    skip_checks -- see make_install function (default: False)
     """
     packages = check_updates()
     if packages:
@@ -312,7 +312,7 @@ def system_update(non_interactive=False):
 
         for package in packages:
             try:
-                make_install(package, non_interactive=non_interactive)
+                make_install(package, skip_checks=skip_checks)
             except BurgaurError as e:
                 # Ignore make_install errors in this case
                 print(e, file=sys.stderr)
@@ -353,7 +353,7 @@ def search_package(target):
     return result
 
 
-def search_install(target, non_interactive=False):
+def search_install(target, skip_checks=False):
     """Search target, display packages that match it and install them.
 
     This function searches the target on AUR, display all results to
@@ -362,7 +362,7 @@ def search_install(target, non_interactive=False):
 
     Keyword arguments:
     target -- target to search on AUR
-    non_interactive -- see make_install function (default: False)
+    skip_checks -- see make_install function (default: False)
     """
     packages = search_package(target)
     for i, package in enumerate(packages):
@@ -377,7 +377,7 @@ def search_install(target, non_interactive=False):
                                              "select multiple packages, "
                                              "dash for ranges): ")
     for i in selected_packages:
-        make_install(packages[i]["name"], True, non_interactive)
+        make_install(packages[i]["name"], True, skip_checks)
 
 
 # main() and auxiliary functions
@@ -411,9 +411,9 @@ def _argparser():
     parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
                         default=[], help="pass arguments directly to cower"
                         "\nWARNING: no sanity check, may break things")
-    parser.add_argument("--non-interactive", action="store_true",
-                        help="skip interactive prompts during install process"
-                        "\nWARNING: possibly unsafe")
+    parser.add_argument("--skip-checks", action="store_true",
+                        help="skip confirmation prompts during install process"
+                        "\nWARNING: may be unsafe")
     parser.add_argument("--version", action="version", version=version_info)
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
@@ -452,9 +452,6 @@ def main():
     if not COWER_PATH:
         sys.exit("Could not find cower installed. Install it from {}"
                  .format(COWER_URL))
-    if args.non_interactive and not MC_PATH:
-        print("Midnight Commander is not installed. "
-              "Ignoring --non-interactive.", file=sys.stderr)
 
     # Allow user to pass options directly to cower
     global COWER_CMD
@@ -462,11 +459,11 @@ def main():
 
     try:
         for target in args.force_update:
-            force_update(target, args.non_interactive)
+            force_update(target, args.skip_checks)
         for package in args.make_install:
-            make_install(package, True, args.non_interactive)
+            make_install(package, True, args.skip_checks)
         if args.system_update:
-            system_update(args.non_interactive)
+            system_update(args.skip_checks)
         if args.search_install:
             search_install(args.search_install)
     except KeyboardInterrupt:
