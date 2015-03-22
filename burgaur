@@ -85,6 +85,52 @@ def query_yes_no(question, default=None):
             print("Please respond with (y)es or (n)o.")
 
 
+def parse_int_from_input(prompt=None):
+    """Ask input from user, tries to parse input for integers.
+
+    User may pass only one value ("0"), multiple values separated by
+    comma ("0,1,5") or a range of values separated by dash ("2-8").
+
+    For now, this is a pretty dumb parser: it only supports one format
+    OR another (so you can only pass comma separated values or a range
+    of them, not both). I may fix this someday, but it works for now.
+
+    Keyword arguments:
+    prompt -- prompt from input() function (default: None)
+    """
+    parse_help = dedent("""
+                        Invalid value, some valid inputs:
+                        0  # single value, returns 0
+                        0,1,4  # multiple values, returns 0,1,4
+                        0-3  # range of values, returns 0,1,2,3
+                        """)
+
+    while True:
+        user_input = input(prompt)
+        result = []
+        try:
+            # If user only entered a number, will be passed here
+            result.append(int(user_input))
+            break
+        except ValueError:
+            # User may have entered more than a number separated by comma
+            try:
+                for number in user_input.split(","):
+                    result.append(int(number))
+                break
+            except ValueError:
+                # User may have entered a range separated by dash
+                try:
+                    i, j = user_input.split("-")
+                    number_range = list(range(int(i), int(j) + 1))
+                    result = list(number_range)
+                    break
+                except ValueError:
+                    # Does not seem to be a valid input, show user help
+                    print(parse_help, file=sys.stderr)
+    return result
+
+
 def view_in_mc(package, directory="."):
     """"View package contents with Midnight Commander.
 
@@ -207,7 +253,6 @@ def make_install(package, install_deps=False, non_interactive=False):
         else:
             return None
 
-
     target_dir = tempfile.mkdtemp(prefix="burgaur-")
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
     cower_cmd = COWER_CMD + ["--color=never", "--quiet",
@@ -255,7 +300,7 @@ def make_install(package, install_deps=False, non_interactive=False):
 
 
 def system_update(non_interactive=False):
-    """Updates all AUR packages that have updates
+    """Updates all AUR packages that have updates.
 
     Keyword arguments:
     non_interactive -- see make_install function (default: False)
@@ -281,25 +326,64 @@ def system_update(non_interactive=False):
         print("All packages are up-to-date.")
 
 
-def super_search(target):
-    """Search a package based on passed target.
+def search_package(target):
+    """Search and returns packages that matches target.
 
-    For now, this is basically a wrapper around 'cower --search' AND
-    'cower --msearch' at the same time, running two subprocess in
-    parallel. This may be completely overkill, but it works.
+    This function uses 'cower -s target' to search packages that
+    matches a certain target, parse cower output and returns a list
+    of dictionaries containing info about all finded packages.
+
+    Each dictionary contains the following keys: category, name,
+    version, description, maintainer and votes. For now this info is
+    hard-coded but it may be dynamically generated in the future.
 
     Keyword arguments:
-    target -- desired target (maybe a package name, its description,
-    current maintainer, etc.)
+    target -- target for 'cower -s target'
     """
-    cmd_search = COWER_CMD + ["--search", target]
-    p_search = subprocess.Popen(cmd_search)
+    package_info = ["category", "name", "version",
+                    "description", "maintainer", "votes"]
+    # output: package++1.0.0++package description++maintainer++123\n
+    cmd = COWER_CMD + ["--format=%c++%n++%v++%d++%m++%o\n",
+                       "--color=never",
+                       "--search", target]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    if err:
+        raise BurgaurError("Error while searching for target {}"
+                           .format(target))
 
-    cmd_msearch = COWER_CMD + ["--msearch", target]
-    p_msearch = subprocess.Popen(cmd_msearch)
+    result = []
+    packages = out.decode(ENCODING).split("\n")[:-1]
+    for package in packages:
+        result.append(dict(zip(package_info, package.split("++"))))
+    return result
 
-    p_search.communicate()
-    p_msearch.communicate()
+
+def search_install(target, non_interactive=False):
+    """Search target, display packages that match it and install them.
+
+    This function searches the target on AUR, display all results to
+    the user in a enumerated way and ask user which ones it should
+    install.
+
+    Keyword arguments:
+    target -- target to search on AUR
+    non_interactive -- see make_install function (default: False)
+    """
+    packages = search_package(target)
+    for i, package in enumerate(packages):
+        print("{}) {}/{} by {} {} ({})\n    {}".format(i,
+                                                       package["category"],
+                                                       package["name"],
+                                                       package["maintainer"],
+                                                       package["version"],
+                                                       package["votes"],
+                                                       package["description"]))
+    selected_packages = parse_int_from_input("Select packages (use comma to "
+                                             "select multiple packages, "
+                                             "dash for ranges): ")
+    for i in selected_packages:
+        make_install(packages[i]["name"], True, non_interactive)
 
 
 # main() and auxiliary functions
@@ -337,11 +421,6 @@ def _argparser():
                         help="skip interactive prompts during install process"
                         "\nWARNING: possibly unsafe")
     parser.add_argument("--version", action="version", version=version_info)
-    search = parser.add_argument_group("search")
-    search.add_argument("-ss", "--super-search", metavar="TARGET",
-                        nargs="+", default=[],
-                        help="search packages by description, name and/or"
-                        "\nmaintainer")
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
                         nargs="+", default=[],
@@ -355,6 +434,9 @@ def _argparser():
                          nargs="+", default=[],
                          help="make and install package from AUR including"
                          "\ndependencies")
+    install.add_argument("-si", "--search-install", metavar="TARGET",
+                         help="list all packages with target name and let"
+                         "\nuser choose which ones it wants to install")
     return parser
 
 
@@ -389,10 +471,10 @@ def main():
             force_update(target, args.non_interactive)
         for package in args.make_install:
             make_install(package, True, args.non_interactive)
-        for target in args.super_search:
-            super_search(target)
         if args.system_update:
             system_update(args.non_interactive)
+        if args.search_install:
+            search_install(args.search_install)
     except BurgaurError as e:
         if __debug__:
             import traceback
