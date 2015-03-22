@@ -365,7 +365,7 @@ def search_install(target, skip_checks=False):
     skip_checks -- see make_install function (default: False)
     """
     packages = search_package(target)
-    for i, package in enumerate(packages):
+    for i, package in enumerate(packages, start=1):
         print("{}) {}/{} by {} {} ({})\n    {}".format(i,
                                                        package["category"],
                                                        package["name"],
@@ -377,7 +377,9 @@ def search_install(target, skip_checks=False):
                                              "select multiple packages, "
                                              "dash for ranges): ")
     for i in selected_packages:
-        make_install(packages[i]["name"], True, skip_checks)
+        if i < 1:
+            raise ValueError("invalid zero/negative value")
+        make_install(packages[i - 1]["name"], True, skip_checks)
 
 
 # main() and auxiliary functions
