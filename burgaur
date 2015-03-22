@@ -436,7 +436,7 @@ def _argparser():
                          "\ndependencies")
     install.add_argument("-si", "--search-install", metavar="TARGET",
                          help="list all packages with target name and let"
-                         "\nuser choose which ones it wants to install")
+                         "\nuser choose which ones to install")
     return parser
 
 
