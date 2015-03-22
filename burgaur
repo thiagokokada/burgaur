@@ -365,6 +365,10 @@ def search_install(target, skip_checks=False):
     skip_checks -- see make_install function (default: False)
     """
     packages = search_package(target)
+    if not packages:
+        print("No packages found", file=sys.stderr)
+        return
+
     for i, package in enumerate(packages, start=1):
         print("{}) {}/{} by {} {} ({})\n    {}".format(i,
                                                        package["category"],
