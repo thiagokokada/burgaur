@@ -200,17 +200,11 @@ def force_update(target, non_interactive=False):
     print(*filtered_packages, sep=", ")
 
     for package in filtered_packages:
-        if non_interactive:
-            query = True
-        else:
-            query = query_yes_no("Do you want to update {}?".format(package),
-                                 default="yes")
-        if query:
-            try:
-                make_install(package, non_interactive=non_interactive)
-            except BurgaurError as e:
-                # Ignore make_install errors in this case
-                print(e, file=sys.stderr)
+        try:
+            make_install(package, non_interactive=non_interactive)
+        except BurgaurError as e:
+            # Ignore make_install errors in this case
+            print(e, file=sys.stderr)
 
 
 def make_install(package, install_deps=False, non_interactive=False):
@@ -252,6 +246,12 @@ def make_install(package, install_deps=False, non_interactive=False):
             return result[0]
         else:
             return None
+
+    if not non_interactive:
+        query = query_yes_no("Do you want to install package {}"
+                             .format(package), default="yes")
+        if not query:
+            return
 
     target_dir = tempfile.mkdtemp(prefix="burgaur-")
     makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
@@ -311,17 +311,11 @@ def system_update(non_interactive=False):
         print(*packages, sep=", ")
 
         for package in packages:
-            if non_interactive:
-                query = True
-            else:
-                query = query_yes_no("Do you want to update {}?"
-                                     .format(package), default="yes")
-            if query:
-                try:
-                    make_install(package, non_interactive=non_interactive)
-                except BurgaurError as e:
-                    # Ignore make_install errors in this case
-                    print(e, file=sys.stderr)
+            try:
+                make_install(package, non_interactive=non_interactive)
+            except BurgaurError as e:
+                # Ignore make_install errors in this case
+                print(e, file=sys.stderr)
     else:
         print("All packages are up-to-date.")
 
