@@ -469,14 +469,14 @@ def main():
             system_update(args.non_interactive)
         if args.search_install:
             search_install(args.search_install)
-    except BurgaurError as e:
+    except KeyboardInterrupt:
+        sys.exit("\nUser cancelled operation.")
+    except Exception as e:
         if __debug__:
             import traceback
             sys.exit(traceback.format_exc())
         else:
-            sys.exit(e)
-    except KeyboardInterrupt:
-        sys.exit("\nUser cancelled operation.")
+            sys.exit(str(e).capitalize())
 
 
 if __name__ == "__main__":
