@@ -91,43 +91,30 @@ def parse_int_from_input(prompt=None):
     User may pass only one value ("0"), multiple values separated by
     comma ("0,1,5") or a range of values separated by dash ("2-8").
 
-    For now, this is a pretty dumb parser: it only supports one format
-    OR another (so you can only pass comma separated values or a range
-    of them, not both). I may fix this someday, but it works for now.
+    For now this parse is greedy: 1abc2 is a valid input thanks to my
+    lousy regex skills. I may fix this someday.
 
     Keyword arguments:
     prompt -- prompt from input() function (default: None)
     """
-    parse_help = dedent("""
-                        Invalid value, some valid inputs:
-                        0  # single value, returns 0
-                        0,1,4  # multiple values, returns 0,1,4
-                        0-3  # range of values, returns 0,1,2,3
-                        """)
-
+    # TODO: this regex is too greedy.
+    regex = re.compile(r"(\d+-\d+)|(\d+)", re.ASCII)
     while True:
         user_input = input(prompt)
+        found_items = regex.findall(user_input)
         result = []
-        try:
-            # If user only entered a number, will be passed here
-            result.append(int(user_input))
+        for item in found_items:
+            if item[0]:
+                i, j = item[0].split("-")
+                result += list(range(int(i), int(j) + 1))
+            if item[1]:
+                result.append(int(item[1]))
+        if result:
             break
-        except ValueError:
-            # User may have entered more than a number separated by comma
-            try:
-                for number in user_input.split(","):
-                    result.append(int(number))
-                break
-            except ValueError:
-                # User may have entered a range separated by dash
-                try:
-                    i, j = user_input.split("-")
-                    number_range = list(range(int(i), int(j) + 1))
-                    result = list(number_range)
-                    break
-                except ValueError:
-                    # Does not seem to be a valid input, show user help
-                    print(parse_help, file=sys.stderr)
+        else:
+            print("Invalid value. Please enter a number. You may enter "
+                  "multiple values using comma (i.e.: 1,3) or a range of "
+                  "values using dash (i.e.: 1-3).", file=sys.stderr)
     return result
 
 
@@ -325,7 +312,7 @@ def search_package(target):
 
     This function uses 'cower -s target' to search packages that
     matches a certain target, parse cower output and returns a list
-    of dictionaries containing info about all finded packages.
+    of dictionaries containing info about all found packages.
 
     Each dictionary contains the following keys: category, name,
     version, description, maintainer and votes. For now this info is
@@ -366,7 +353,8 @@ def search_install(target, skip_checks=False):
     """
     packages = search_package(target)
     if not packages:
-        print("No packages found", file=sys.stderr)
+        print("No packages with target {} found".format(target),
+              file=sys.stderr)
         return
 
     for i, package in enumerate(packages, start=1):
