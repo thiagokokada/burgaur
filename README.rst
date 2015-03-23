@@ -9,7 +9,7 @@ A delicious AUR helper. Made from cower.
 :Author: thiago.mast3r@gmail.com
 :Date:   2015-03-23
 :Copyright: Thiago Kenji Okada
-:Version: 0.6
+:Version: 1.0
 :Manual section: 1
 :Manual group: system
 
