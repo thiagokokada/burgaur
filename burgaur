@@ -30,22 +30,302 @@ __maintainer__ = "Thiago Kenji Okada"
 __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Development"
 
-COWER_URL = "https://aur.archlinux.org/packages/cower/"
-PACMAN_PATH = find_executable("pacman")
-MAKEPKG_PATH = find_executable("makepkg")
-COWER_PATH = find_executable("cower")
-COWER_CMD = [COWER_PATH]
-MC_PATH = find_executable("mc")  # mc is an optional dependency
-ENCODING = os.getenv("LANG", ".utf8").split(".")[1]
-# In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to compile
-# big packages completely on RAM, so by default we use /var/tmp. Anyway, the
-# user can overrides this setting by setting env variable BURGAUR_TARGET_DIR.
-tempfile.tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
 
-
-# Internal error class
+# Class definitions
 class BurgaurError(Exception):
+
+    """Generic Burgaur exception, used by Burgaur class"""
+
     pass
+
+
+class Burgaur(object):
+
+    """Main burgaur class
+
+    Keyword arguments:
+    pacman_path -- path to pacman (default: pacman)
+    makepkg_path -- path to makepkg (default: makepkg)
+    cower_path -- path to cower (default: cower)
+    mc_path -- path to pacman (default: mc)
+    encoding -- system encoding from LANG environmental variable
+    (default: utf8)
+    tempdir -- location of temporary directory used to build packages.
+    "None" means default Python location, see tempfile.tempdir for
+    details (default: None)
+    cower_raw_options -- extra arguments to use by default when
+    running cower. WARNING: there is no sanity checking, this may
+    break things (default: None)
+    """
+
+    def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
+                 cower_path="cower", mc_path="mc", encoding="utf8",
+                 tempdir=None, cower_raw_options=None):
+        self.pacman_path = pacman_path
+        self.makepkg_path = makepkg_path
+        self.cower_path = cower_path
+        self.mc_path = mc_path
+        self.encoding = encoding
+        self.tempdir = tempdir
+        self.cower_cmd = [self.cower_path]
+        if cower_raw_options:
+            self.cower_cmd += cower_raw_options
+
+    def check_updates(self):
+        """Check available updates for AUR packages.
+
+        In case of sucess it returns a list of strings with each
+        package that can be updated or None if there is no update
+        available. In case of error it force exit with return code 1,
+        including a user friendly message.
+
+        Raises a BurgaurError in case of error.
+        """
+        cmd = self.cower_cmd + ["--color=never", "--update", "--quiet"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        out, err = process.communicate()
+
+        # According to issue https://github.com/falconindy/cower/issues/32,
+        # cower returns 1 if there is packages to update, 0 if there is
+        # nothing, and anything else if there is a error.
+        if process.returncode == 1:
+            packages = out.decode(encoding=self.encoding).split("\n")[:-1]
+            return packages
+        elif process.returncode == 0:
+            return None
+        else:
+            raise BurgaurError("Error while checking for updates.")
+
+    def force_update(self, target, skip_checks=False):
+        """Force update of packages from AUR with target name.
+
+        The user case of this function is to update VCS packages. For
+        example, you could pass target="-git", and since the majority
+        of Git packages on AUR finishes with "-git" prefix it would
+        try to update all of them.
+
+        Since it's difficult to know if VCS packages are up-to-date
+        or not unless we build it and try to install, please doesn't
+        expect any intelligence from using this function.
+
+        target -- a package name or a generic target; support glob
+        expansion
+        skip_checks -- update all packages without asking for user
+        input; affect make_install function too (default: False)
+        """
+        cmd = [self.pacman_path, "--query",
+               "--foreign", "--quiet",
+               "--color", "never"]
+        installed_packages = subprocess.check_output(cmd)
+        installed_packages = installed_packages.decode(encoding=self.encoding)
+        installed_packages = installed_packages.split("\n")[:-1]
+        filtered_packages = list(filter(lambda x: re.search(target, x),
+                                        installed_packages))
+
+        print("Packages to update:", end=" ")
+        print(*filtered_packages, sep=", ")
+
+        for package in filtered_packages:
+            try:
+                self.make_install(package, skip_checks=skip_checks)
+            except BurgaurError as e:
+                # Ignore make_install errors in this case
+                print(e, file=sys.stderr)
+
+    def make_install(self, package, install_deps=False, skip_checks=False):
+        """Download, make and install package.
+
+        This function creates a temporary directory, downloads the
+        PKGBUILD using 'cower -d' and make/install the package using
+        'makepkg -si' command.
+
+        Raises a BurgaurError in case of error.
+
+        Keyword arguments:
+        package -- desired package to be installed (must match a
+        package name on AUR)
+        install_deps -- use cower '-dd' instead of only '-d' to
+        download AUR dependencies and install them before the main
+        package (default: False)
+        skip_checks -- skip interactive prompts during install
+        process; WARNING: possibly unsafe (default: False)
+        """
+        if not skip_checks:
+            query = query_yes_no("Do you want to install package {}"
+                                 .format(package), default="yes")
+            if not query:
+                return
+
+        target_dir = tempfile.mkdtemp(prefix="burgaur-", dir=self.tempdir)
+        os.chdir(target_dir)
+        makepkg_cmd = [self.makepkg_path, "--syncdeps", "--install"]
+        cower_cmd = self.cower_cmd + ["--color=never", "--quiet",
+                                      "--download", package,
+                                      "--target", target_dir]
+
+        if install_deps:
+            cower_cmd += ["--download"]
+
+        try:
+            subprocess.check_call(cower_cmd)
+        except subprocess.CalledProcessError:
+            raise BurgaurError("Error while downloading package {} or its "
+                               "depedencies.".format(package))
+        try:
+            packages = os.listdir()
+            # We remove and append the package in packages list to ensure
+            # that the dependencies are installed before the main package.
+            try:
+                packages.remove(package)
+                packages.append(package)
+            except ValueError:
+                # We could remove this try by deciding from _get_package_base
+                # output if there is or not a PackageBase, but
+                # _get_package_base is slow.
+                package_base = self._get_package_base(package)
+                if package_base:
+                    print("PackageBase {} found.".format(package_base))
+                    packages.remove(package_base)
+                    packages.append(package_base)
+                else:
+                    raise BurgaurError("Directory from package {} not found, "
+                                       "and not a splitted package."
+                                       .format(package))
+            for package in packages:
+                os.chdir(package)
+                if not skip_checks:
+                    self.view_in_mc(package)
+                subprocess.check_call(makepkg_cmd)
+                os.chdir(target_dir)
+        except subprocess.CalledProcessError:
+            raise BurgaurError("Error while installing package {}."
+                               .format(package))
+        finally:
+            rmtree(target_dir)
+
+    def system_update(self, skip_checks=False):
+        """Updates all AUR packages that have updates.
+
+        Keyword arguments:
+        skip_checks -- see make_install function (default: False)
+        """
+        packages = self.check_updates()
+        if packages:
+            print("Packages to update:", end=" ")
+            print(*packages, sep=", ")
+
+            for package in packages:
+                try:
+                    self.make_install(package, skip_checks=skip_checks)
+                except BurgaurError as e:
+                    # Ignore make_install errors in this case
+                    print(e, file=sys.stderr)
+        else:
+            print("All packages are up-to-date.")
+
+    def search_package(self, target):
+        """Search and returns packages that matches target.
+
+        This function uses 'cower -s target' to search packages that
+        matches a certain target, parse cower output and returns a
+        list of dictionaries containing info about all found packages.
+
+        Each dictionary contains the following keys: category, name,
+        version, description, maintainer and votes. For now this info
+        is hard-coded but it may be dynamically generated in the
+        future.
+
+        Keyword arguments:
+        target -- target for 'cower -s target'
+        """
+        package_info = ["category", "name", "version",
+                        "description", "maintainer", "votes"]
+        # output: package++1.0.0++package description++maintainer++123\n
+        cmd = self.cower_cmd + ["--format=%c++%n++%v++%d++%m++%o\n",
+                                "--color=never",
+                                "--search", target]
+        p = subprocess.Popen(cmd,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        if err:
+            raise BurgaurError("Error while searching for target {}"
+                               .format(target))
+
+        result = []
+        packages = out.decode(self.encoding).split("\n")[:-1]
+        for package in packages:
+            result.append(dict(zip(package_info, package.split("++"))))
+        return result
+
+    def search_install(self, target, skip_checks=False):
+        """Search target, display packages that match it and install
+        them.
+
+        This function searches the target on AUR, display all results
+        to the user in a enumerated way and ask user which ones it
+        should install.
+
+        There isn't many sanity checks of the user input. The user may
+        install the same package twice, for example.
+
+        Keyword arguments:
+        target -- target to search on AUR
+        skip_checks -- see make_install function (default: False)
+        """
+        packages = self.search_package(target)
+        if not packages:
+            print("No packages with target {} found".format(target),
+                  file=sys.stderr)
+            return
+
+        for i, package in enumerate(packages, start=1):
+            print("{}) {}/{} by {} {} ({})\n    {}"
+                  .format(i, package["category"], package["name"],
+                          package["maintainer"], package["version"],
+                          package["votes"], package["description"]))
+
+        selected_packages = parse_int_from_input("Select packages (use comma "
+                                                 "to select multiple packages,"
+                                                 " dash for ranges): ")
+        for i in selected_packages:
+            if i < 1:
+                raise ValueError("invalid zero/negative value")
+            self.make_install(packages[i - 1]["name"], True, skip_checks)
+
+    def view_in_mc(self, package, directory="."):
+        """"View package contents with Midnight Commander.
+
+        Keyword arguments:
+        package -- package name
+        directory -- directory to open in mc (default: ".")
+        """
+        if self.mc_path:  # only runs if mc is installed, otherwise ignore it
+            query = query_yes_no("Do you want to view package {} contents in "
+                                 "mc?".format(package), default="yes")
+            if query:
+                subprocess.call([self.mc_path, directory])
+
+    def _get_package_base(self, package):
+        """Get package base name.
+
+        This is an ugly hack until this issue is solved:
+        https://github.com/falconindy/cower/issues/105
+
+        Keyword arguments:
+        package -- package to get PackageBase information
+        """
+        cower_cmd = self.cower_cmd + ["--color=never", "--info", package]
+        try:
+            out = subprocess.check_output(cower_cmd).decode(self.encoding)
+        except subprocess.CalledProcessError:
+            raise BurgaurError("Error while getting package {} info."
+                               .format(package))
+        result = re.findall(r"PackageBase\s+: (.+)", out)
+        if result:
+            return result[0]
+        else:
+            return None
 
 
 # Auxiliary functions
@@ -118,265 +398,6 @@ def parse_int_from_input(prompt=None):
     return result
 
 
-def view_in_mc(package, directory="."):
-    """"View package contents with Midnight Commander.
-
-    Keyword arguments:
-    package -- package name
-    directory -- directory to open in mc (default: ".")
-    """
-    if MC_PATH:  # only runs if mc is installed, otherwise ignore it
-        query = query_yes_no("Do you want to view package {} contents in mc?"
-                             .format(package), default="yes")
-        if query:
-            subprocess.call([MC_PATH, directory])
-
-
-# AUR related functions
-def check_updates():
-    """Check available updates for AUR packages.
-
-    In case of sucess it returns a list of strings with each package
-    that can be updated or None if there is no update available.
-    In case of error it force exit with return code 1, including a user
-    friendly message.
-
-    Raises a BurgaurError in case of error.
-    """
-    cmd = COWER_CMD + ["--color=never", "--update", "--quiet"]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    out, err = process.communicate()
-
-    # According to this issue https://github.com/falconindy/cower/issues/32,
-    # cower returns 1 if there is packages to update, 0 if there is nothing,
-    # and anything else if there is a error.
-    if process.returncode == 1:
-        packages = out.decode(encoding=ENCODING).split("\n")[:-1]
-        return packages
-    elif process.returncode == 0:
-        return None
-    else:
-        raise BurgaurError("Error while checking for updates.")
-
-
-def force_update(target, skip_checks=False):
-    """Force update of packages from AUR with target name.
-
-    The user case of this function is to update VCS packages. For
-    example, you could pass target="-git", and since the majority of
-    Git packages on AUR finishes with "-git" prefix it would try to
-    update all of them.
-
-    Since it's impossible to know if VCS packages are up-to-date or not
-    unless we build it and try to install, please doesn't expect any
-    intelligence from using this function.
-
-    target -- a package name or a generic target; support glob
-    expansion
-    skip_checks -- update all packages without asking for user
-    input; affect make_install function too (default: False)
-    """
-    cmd = [PACMAN_PATH, "-Q", "--foreign", "--quiet", "--color", "never"]
-    installed_packages = subprocess.check_output(cmd)
-    installed_packages = installed_packages.decode(encoding=ENCODING)
-    installed_packages = installed_packages.split("\n")[:-1]
-    filtered_packages = list(filter(lambda x: re.search(target, x),
-                                    installed_packages))
-
-    print("Packages to update:", end=" ")
-    print(*filtered_packages, sep=", ")
-
-    for package in filtered_packages:
-        try:
-            make_install(package, skip_checks=skip_checks)
-        except BurgaurError as e:
-            # Ignore make_install errors in this case
-            print(e, file=sys.stderr)
-
-
-def make_install(package, install_deps=False, skip_checks=False):
-    """Download, make and install package.
-
-    This function creates a temporary directory, downloads the PKGBUILD
-    using 'cower -d' and make/install the package using 'makepkg -si'
-    command.
-
-    Raises a BurgaurError in case of error.
-
-    Keyword arguments:
-    package -- desired package to be installed (must match a package
-    name on AUR)
-    install_deps -- use cower '-dd' instead of only '-d' to download
-    AUR dependencies and install them before the main package (default:
-    False)
-    skip_checks -- skip interactive prompts during install process;
-    WARNING: possibly unsafe (default: False)
-    """
-
-    def _get_package_base(package):
-        """Get package base name.
-
-        This is an ugly hack until this issue is solved:
-        https://github.com/falconindy/cower/issues/105
-
-        Keyword arguments:
-        package -- package to get PackageBase information
-        """
-        cower_cmd = COWER_CMD + ["--color=never", "--info", package]
-        try:
-            out = subprocess.check_output(cower_cmd).decode(ENCODING)
-        except subprocess.CalledProcessError:
-            raise BurgaurError("Error while getting package {} info."
-                               .format(target))
-        result = re.findall(r"PackageBase\s+: (.+)", out)
-        if result:
-            return result[0]
-        else:
-            return None
-
-    if not skip_checks:
-        query = query_yes_no("Do you want to install package {}"
-                             .format(package), default="yes")
-        if not query:
-            return
-
-    target_dir = tempfile.mkdtemp(prefix="burgaur-")
-    makepkg_cmd = [MAKEPKG_PATH, "--syncdeps", "--install"]
-    cower_cmd = COWER_CMD + ["--color=never", "--quiet",
-                             "--download", package,
-                             "--target", target_dir]
-    if install_deps:
-        cower_cmd += ["--download"]
-
-    os.chdir(target_dir)
-    try:
-        subprocess.check_call(cower_cmd)
-    except subprocess.CalledProcessError:
-        raise BurgaurError("Error while downloading package {} or its "
-                           "depedencies.".format(package))
-    try:
-        packages = os.listdir()
-        # We remove and append the package in packages list to ensure
-        # that the dependencies are installed before the main package.
-        try:
-            packages.remove(package)
-            packages.append(package)
-        except ValueError:
-            # We could remove this try by deciding from _get_package_base
-            # output if there is or not a PackageBase, but _get_package_base
-            # is slow.
-            package_base = _get_package_base(package)
-            if package_base:
-                print("PackageBase {} found.".format(package_base))
-                packages.remove(package_base)
-                packages.append(package_base)
-            else:
-                raise BurgaurError("Directory from package {} not found, and"
-                                   " not a splitted package.".format(package))
-        for package in packages:
-            os.chdir(package)
-            if not skip_checks:
-                view_in_mc(package)
-            subprocess.check_call(makepkg_cmd)
-            os.chdir(target_dir)
-    except subprocess.CalledProcessError:
-        raise BurgaurError("Error while installing package {}."
-                           .format(package))
-    finally:
-        rmtree(target_dir)
-
-
-def system_update(skip_checks=False):
-    """Updates all AUR packages that have updates.
-
-    Keyword arguments:
-    skip_checks -- see make_install function (default: False)
-    """
-    packages = check_updates()
-    if packages:
-        print("Packages to update:", end=" ")
-        print(*packages, sep=", ")
-
-        for package in packages:
-            try:
-                make_install(package, skip_checks=skip_checks)
-            except BurgaurError as e:
-                # Ignore make_install errors in this case
-                print(e, file=sys.stderr)
-    else:
-        print("All packages are up-to-date.")
-
-
-def search_package(target):
-    """Search and returns packages that matches target.
-
-    This function uses 'cower -s target' to search packages that
-    matches a certain target, parse cower output and returns a list
-    of dictionaries containing info about all found packages.
-
-    Each dictionary contains the following keys: category, name,
-    version, description, maintainer and votes. For now this info is
-    hard-coded but it may be dynamically generated in the future.
-
-    Keyword arguments:
-    target -- target for 'cower -s target'
-    """
-    package_info = ["category", "name", "version",
-                    "description", "maintainer", "votes"]
-    # output: package++1.0.0++package description++maintainer++123\n
-    cmd = COWER_CMD + ["--format=%c++%n++%v++%d++%m++%o\n",
-                       "--color=never",
-                       "--search", target]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    if err:
-        raise BurgaurError("Error while searching for target {}"
-                           .format(target))
-
-    result = []
-    packages = out.decode(ENCODING).split("\n")[:-1]
-    for package in packages:
-        result.append(dict(zip(package_info, package.split("++"))))
-    return result
-
-
-def search_install(target, skip_checks=False):
-    """Search target, display packages that match it and install them.
-
-    This function searches the target on AUR, display all results to
-    the user in a enumerated way and ask user which ones it should
-    install.
-
-    There isn't many sanity checks of the user input. The user may
-    install the same package twice, for example.
-
-    Keyword arguments:
-    target -- target to search on AUR
-    skip_checks -- see make_install function (default: False)
-    """
-    packages = search_package(target)
-    if not packages:
-        print("No packages with target {} found".format(target),
-              file=sys.stderr)
-        return
-
-    for i, package in enumerate(packages, start=1):
-        print("{}) {}/{} by {} {} ({})\n    {}".format(i,
-                                                       package["category"],
-                                                       package["name"],
-                                                       package["maintainer"],
-                                                       package["version"],
-                                                       package["votes"],
-                                                       package["description"]))
-    selected_packages = parse_int_from_input("Select packages (use comma to "
-                                             "select multiple packages, "
-                                             "dash for ranges): ")
-    for i in selected_packages:
-        if i < 1:
-            raise ValueError("invalid zero/negative value")
-        make_install(packages[i - 1]["name"], True, skip_checks)
-
-
 # main() and auxiliary functions
 def _argparser():
     """Print and parse arguments"""
@@ -439,30 +460,42 @@ def main():
         sys.exit(1)
     args = parser.parse_args()
 
-    # Check dependencies
+    # Get executable paths and some important environmental vars
+    pacman_path = find_executable("pacman")
+    makepkg_path = find_executable("makepkg")
+    cower_path = find_executable("cower")
+    mc_path = find_executable("mc")  # mc is an optional dependency
+    encoding = os.getenv("LANG", ".utf8").split(".")[1]
+    # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to
+    # compile big packages completely on RAM, so by default we use /var/tmp.
+    # The user may overrides this setting by setting BURGAUR_TARGET_DIR.
+    tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
+
+    # Sanity checks
     if os.geteuid() == 0:
         sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
-    if not PACMAN_PATH:
+    if not pacman_path:
         sys.exit("Could not find pacman installed. Are you using Arch Linux?")
-    if not MAKEPKG_PATH:
+    if not makepkg_path:
         sys.exit("Could not find makepkg installed. Are you using Arch Linux?")
-    if not COWER_PATH:
+    if not cower_path:
+        cower_url = "https://aur.archlinux.org/packages/cower/"
         sys.exit("Could not find cower installed. Install it from {}"
-                 .format(COWER_URL))
+                 .format(cower_url))
 
-    # Allow user to pass options directly to cower
-    global COWER_CMD
-    COWER_CMD += args.cower_raw_options
+    # Initialize main class
+    burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
+                      encoding, tempdir, args.cower_raw_options)
 
     try:
         for target in args.force_update:
-            force_update(target, args.skip_checks)
+            burgaur.force_update(target, args.skip_checks)
         for package in args.make_install:
-            make_install(package, True, args.skip_checks)
+            burgaur.make_install(package, True, args.skip_checks)
         if args.system_update:
-            system_update(args.skip_checks)
+            burgaur.system_update(args.skip_checks)
         if args.search_install:
-            search_install(args.search_install)
+            burgaur.search_install(args.search_install)
     except KeyboardInterrupt:
         sys.exit("\nUser cancelled operation.")
     except Exception as e:
