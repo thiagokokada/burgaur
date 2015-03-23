@@ -17,9 +17,7 @@ A delicious AUR helper. Made from cower.
 SYSNOPSIS
 =========
 
-  burgaur [-h] [--cower-raw-options ...] [--skip-checks] [--version]
-          [-fu TARGET [TARGET ...]] [-su] [-mi PACKAGE [PACKAGE ...]]
-          [-si TARGET]
+**burgaur** [*OPTIONS*]... [*COMMANDS*]...
 
 
 DESCRIPTION
@@ -102,14 +100,14 @@ run:
 
 ::
 
-    $ burgaur -fu=-git
+    $ burgaur -fu=-git  # The equals (=) is necessary because of the dash (-)
 
 
-To force update all VCS packages, you can run:
+To force update only one package, you can do:
 
 ::
 
-    $ burgaur -fu=-git,-svn,-hg,-cvs
+    $ burgaur -fu burgaur-git
 
 
 To install a package that you know the name:
@@ -121,14 +119,14 @@ To install a package that you know the name:
 
 For problematic packages, you can temporary change the directory where packages
 will be build (by default, on ``/var/tmp``) and keep the result files for later
-use by using:
+use using:
 
 ::
 
     $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --keep-files
 
 
-Or if you just want to build the package but to not install it:
+Or if you just want to build a package but to not install it:
 
 ::
 
@@ -146,14 +144,14 @@ package description):
 SEE ALSO
 ========
 
-* `cower <https://github.com/falconindy/cower>`__
-* `makepkg <https://wiki.archlinux.org/index.php/Makepkg>`__
+* ``cower`` <https://github.com/falconindy/cower>
+* ``makepkg`` <https://wiki.archlinux.org/index.php/Makepkg>
 
 
 BUGS
 ====
 
-Please report bugs to `GitHub <https://github.com/m45t3r/burgaur/issues>`__.
+Please report bugs to ``GitHub`` <https://github.com/m45t3r/burgaur/issues>.
 
 
 .. vim: ts=8 et sw=4 sts=4
