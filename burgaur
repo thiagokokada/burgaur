@@ -181,10 +181,13 @@ class Burgaur(object):
             except ValueError:
                 # We could remove this try by deciding from _get_package_base
                 # output if there is or not a PackageBase, but
-                # _get_package_base is slow.
+                # _get_package_base is slow since it uses another subprocess.
+                print("Package {} not found, trying to find PackageBase."
+                      .format(package), file=sys.stderr)
                 package_base = self._get_package_base(package)
                 if package_base:
-                    print("PackageBase {} found.".format(package_base))
+                    print("PackageBase {} found. Trying to install it"
+                          .format(package_base))
                     packages.remove(package_base)
                     packages.append(package_base)
                 else:
