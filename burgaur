@@ -94,7 +94,7 @@ class Burgaur(object):
         elif process.returncode == 0:
             return None
         else:
-            raise BurgaurError("Error while checking for updates.")
+            raise BurgaurError("error while checking for updates")
 
     def force_update(self, target, skip_checks=False):
         """Force update of packages from AUR with target name.
@@ -130,7 +130,7 @@ class Burgaur(object):
                 self.make_install(package, skip_checks=skip_checks)
             except BurgaurError as e:
                 # Ignore make_install errors in this case
-                print(e, file=sys.stderr)
+                print_format_or_exc(e)
 
     def make_install(self, package, install_deps=False, skip_checks=False):
         """Download, make and install package.
@@ -169,8 +169,8 @@ class Burgaur(object):
         try:
             subprocess.check_call(cower_cmd)
         except subprocess.CalledProcessError:
-            raise BurgaurError("Error while downloading package {} or its "
-                               "depedencies.".format(package))
+            raise BurgaurError("error while downloading package {} or its "
+                               "depedencies".format(package))
         try:
             packages = os.listdir()
             # We remove and append the package in packages list to ensure
@@ -191,8 +191,8 @@ class Burgaur(object):
                     packages.remove(package_base)
                     packages.append(package_base)
                 else:
-                    raise BurgaurError("Directory from package {} not found, "
-                                       "and not a splitted package."
+                    raise BurgaurError("directory from package {} not found, "
+                                       "and not a splitted package"
                                        .format(package))
             for package in packages:
                 os.chdir(package)
@@ -201,7 +201,7 @@ class Burgaur(object):
                 subprocess.check_call(makepkg_cmd)
                 os.chdir(target_dir)
         except subprocess.CalledProcessError:
-            raise BurgaurError("Error while installing package {}."
+            raise BurgaurError("error while installing package {}"
                                .format(package))
         finally:
             rmtree(target_dir)
@@ -222,7 +222,7 @@ class Burgaur(object):
                     self.make_install(package, skip_checks=skip_checks)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
-                    print(e, file=sys.stderr)
+                    print_format_or_exc(e)
         else:
             print("All packages are up-to-date.")
 
@@ -252,7 +252,7 @@ class Burgaur(object):
                              stderr=subprocess.PIPE)
         out, err = p.communicate()
         if err:
-            raise BurgaurError("Error while searching for target {}"
+            raise BurgaurError("error while searching for target {}"
                                .format(target))
 
         result = []
@@ -322,7 +322,7 @@ class Burgaur(object):
         try:
             out = subprocess.check_output(cower_cmd).decode(self.encoding)
         except subprocess.CalledProcessError:
-            raise BurgaurError("Error while getting package {} info."
+            raise BurgaurError("error while getting package {} info"
                                .format(package))
         result = re.findall(r"PackageBase\s+: (.+)", out)
         if result:
@@ -399,6 +399,19 @@ def parse_int_from_input(prompt=None):
                   "multiple values using comma (i.e.: 1,2,3) or a range of "
                   "values using dash (i.e.: 1-3).", file=sys.stderr)
     return result
+
+
+def print_format_or_exc(e):
+    """Print error in user friendly way or stack trace if in debug mode
+    
+    Keyword arguments:
+    e -- error message from exception
+    """
+    if __debug__:
+        import traceback
+        traceback.print_exc()
+    else:
+        print("Error: {}".format(e), file=sys.stderr)
 
 
 # main() and auxiliary functions
@@ -502,11 +515,8 @@ def main():
     except KeyboardInterrupt:
         sys.exit("\nUser cancelled operation.")
     except Exception as e:
-        if __debug__:
-            import traceback
-            sys.exit(traceback.format_exc())
-        else:
-            sys.exit(str(e).capitalize())
+        print_format_or_exc(e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
