@@ -55,11 +55,16 @@ class Burgaur(object):
     cower_raw_options -- extra arguments to use by default when
     running cower. WARNING: there is no sanity checking, this may
     break things (default: None)
+    skip_install -- do not install packages after build. If True
+    assume keep_files=True too (default: False)
+    keep_files -- do not remove temporary directory after build
+    (default: False)
     """
 
     def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
                  cower_path="cower", mc_path="mc", encoding="utf8",
-                 tempdir=None, cower_raw_options=None):
+                 tempdir=None, cower_raw_options=None, skip_install=False,
+                 keep_files=False):
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
@@ -69,6 +74,12 @@ class Burgaur(object):
         self.cower_cmd = [self.cower_path]
         if cower_raw_options:
             self.cower_cmd += cower_raw_options
+        if skip_install:
+            self.skip_install = True
+            self.keep_files = True
+        else:
+            self.skip_install = False
+            self.keep_files = keep_files
 
     def check_updates(self):
         """Check available updates for AUR packages.
@@ -156,20 +167,20 @@ class Burgaur(object):
                 return
 
         target_dir = tempfile.mkdtemp(prefix="burgaur-", dir=self.tempdir)
-        os.chdir(target_dir)
-        makepkg_cmd = [self.makepkg_path, "--syncdeps", "--install"]
+        makepkg_cmd = [self.makepkg_path, "--syncdeps"]
+        if not self.skip_install:
+            makepkg_cmd += ["--install"]
         cower_cmd = self.cower_cmd + ["--color=never", "--quiet",
                                       "--download", package,
                                       "--target", target_dir]
-
         if install_deps:
             cower_cmd += ["--download"]
-
         try:
             subprocess.check_call(cower_cmd)
         except subprocess.CalledProcessError:
             raise BurgaurError("error while downloading package {} or its "
                                "depedencies".format(package))
+        os.chdir(target_dir)
         try:
             packages = os.listdir()
             # We remove and append the package in packages list to ensure
@@ -198,12 +209,12 @@ class Burgaur(object):
                 if not skip_checks:
                     self.view_in_mc(package)
                 subprocess.check_call(makepkg_cmd)
-                os.chdir(target_dir)
         except subprocess.CalledProcessError:
             raise BurgaurError("error while installing package {}"
                                .format(package))
         finally:
-            rmtree(target_dir)
+            if not self.keep_files:
+                rmtree(target_dir)
 
     def system_update(self, skip_checks=False):
         """Updates all AUR packages that have updates.
@@ -447,6 +458,12 @@ def _argparser():
     parser.add_argument("--skip-checks", action="store_true",
                         help="skip confirmation prompts during install process"
                         "\nWARNING: may be unsafe")
+    parser.add_argument("--keep-files", action="store_true",
+                        help="do not remove temporary build directory after"
+                        "\ninstall")
+    parser.add_argument("--skip-install", action="store_true",
+                        help="do not install packages after build"
+                        "\nassume '--keep-files'")
     parser.add_argument("--version", action="version", version=version_info)
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
@@ -500,7 +517,8 @@ def main():
 
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
-                      encoding, tempdir, args.cower_raw_options)
+                      encoding, tempdir, args.cower_raw_options,
+                      args.skip_install, args.keep_files)
 
     try:
         for target in args.force_update:

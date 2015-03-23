@@ -43,12 +43,17 @@ optional arguments
 
 -h, --help                          show this help message and exit
 
---cower-raw-options OPTIONS         pass arguments directly to cower
+--cower-raw-options OPTIONS         pass arguments directly to cower,
                                     WARNING: no sanity check, may break things
 
 --skip-checks                       skip confirmation prompts during install
-                                    process
-                                    WARNING: may be unsafe
+                                    process, WARNING: may be unsafe
+
+--keep-files                        do not remove temporary build directory
+                                    after install
+
+--skip-install                      do not install packages after build,
+                                    assume '--keep-files'
 
 --version                           show program's version number and exit
 
@@ -71,6 +76,14 @@ install
 
 -si, --search-install TARGET        list all packages with target name and let
                                     user choose which ones to install
+
+
+CONFIGURATION
+=============
+
+All configuration is done by setting environmental variables.
+
+* ``BURGAUR_TARGET_DIR``: set temporary directory for building packages.
 
 
 EXAMPLES
@@ -104,6 +117,22 @@ To install a package that you know the name:
 ::
 
     $ burgaur -mi package
+
+
+For problematic packages, you can temporary change the directory where packages
+will be build (by default, on ``/var/tmp``) and keep the result files for later
+use by using:
+
+::
+
+    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --keep-files
+
+
+Or if you just want to build the package but to not install it:
+
+::
+
+    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --skip-install
 
 
 To install a package that you only remember some information (like part of the
