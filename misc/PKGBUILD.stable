@@ -10,7 +10,7 @@ license=('MIT')
 depends=('cower' 'pacman' 'python')
 optdepends=('mc: check package contents before operation')
 source=("${url}/archive/${pkgver}.tar.gz")
-sha256sums=('40e4ed06d1e294247ba0371540deaef6bbf195730d5f634e45f0de254950c5b3')
+sha256sums=('c9a763a8028949056aad231199bd8a4650b062bc862c359be71290bb6ea51966')
 conflicts=('burgaur-git')
 
 package() {
