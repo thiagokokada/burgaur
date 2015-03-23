@@ -1,63 +1,130 @@
+=======
 burgaur
 =======
 
+----------------------------------------
 A delicious AUR helper. Made from cower.
 ----------------------------------------
 
+:Author: thiago.mast3r@gmail.com
+:Date:   2015-03-23
+:Copyright: Thiago Kenji Okada
+:Version: 0.6
+:Manual section: 1
+:Manual group: system
 
-Introduction
-~~~~~~~~~~~~
 
-This program is a subset of ``cower`` that automates some tedious tasks like updating all your installed AUR packages.
+SYSNOPSIS
+=========
 
-For example, instead of running ``cower -ud`` to download the all new PKGBUILDs, going in each created directory and running ``makepkg -i`` in all of them, you can simply use:
+  burgaur [-h] [--cower-raw-options ...] [--skip-checks] [--version]
+          [-fu TARGET [TARGET ...]] [-su] [-mi PACKAGE [PACKAGE ...]]
+          [-si TARGET]
+
+
+DESCRIPTION
+===========
+
+Burgaur is an AUR helper based on and strictly a superset of cower. It automates
+of boring tasks that in cower you need to do by hand, like updating all your AUR
+system packages or installing a new package from AUR including its dependencies.
+
+It doesn't try to be everything (i.e. like yaourt). Instead, it simple assume
+that there is already a better tool to do some job and only tries to complement
+other tools.
+
+
+OPTIONS
+=======
+
+
+optional arguments
+~~~~~~~~~~~~~~~~~~
+
+-h, --help                          show this help message and exit
+
+--cower-raw-options OPTIONS         pass arguments directly to cower
+                                    WARNING: no sanity check, may break things
+
+--skip-checks                       skip confirmation prompts during install
+                                    process
+                                    WARNING: may be unsafe
+
+--version                           show program's version number and exit
+
+
+update
+~~~~~~
+
+-fu, --force-update TARGET          force update of installed AUR packages with
+                                    target name, useful for updating VCS
+                                    packages
+
+-su, --system-update                update all AUR packages
+
+
+install
+~~~~~~~
+
+-mi, --make-install PACKAGE         make and install package from AUR, including
+                                    dependencies
+
+-si, --search-install TARGET        list all packages with target name and let
+                                    user choose which ones to install
+
+
+EXAMPLES
+========
+
+To update all out-of-date packages from AUR (excluding VCS packages) you can
+run:
 
 ::
 
     $ burgaur -su
 
-This will update all AUR packages that are currently out-of-date, except for VCS packages like `mpv-git`_. You can update them by using:
+
+To force update all packages ending with -git (like "burgaur-git"), you can
+run:
 
 ::
 
     $ burgaur -fu=-git
 
-What this command tries to do is forcing an update to all packages that has "-git" in its name. Don't worry about burgaur updating unecessary packages, it will ask for confirmation before doing anything.
 
-To install new packages, instead of doing ``cower -dd random_package``, going into each directory and running ``makepkg -si`` (remember that you need to eventually install AUR dependencies too), you can simple do:
-
-::
-
-    $ burgaur -mi random_package
-
-And it will do everything for you.
-
-One last trick is using:
+To force update all VCS packages, you can run:
 
 ::
 
-    $ burgaur -ss target
+    $ burgaur -fu=-git,-svn,-hg,-cvs
 
-This is equivalent of doing ``cower -s target && cower -m target``, but it's faster since it does both searchs in the same time.
 
-How to install
-~~~~~~~~~~~~~~
-
-You need to have both ``cower``, ``python`` and ``makepkg`` (part of ``pacman``) installed and added somewhere on your PATH. If you have all of them you can simply download the script and use it.
-
-But you will probably prefer to use the included PKGBUILD to create a nice installable package. You can download it in some folder and run:
+To install a package that you know the name:
 
 ::
 
-    $ makepkg -si
+    $ burgaur -mi package
 
-To create and install the package. Alternatively you can go to `AUR`_ and install the lastest current available version.
 
-Credits
-~~~~~~~
+To install a package that you only remember some information (like part of the
+package description):
 
-This project is based on `cower`_. Thanks falconindy for this amazing piece of program.
+::
 
-.. _`cower`: https://aur.archlinux.org/packages/cower/
-.. _`AUR`: https://aur.archlinux.org/packages/burgaur/
-.. _`mpv-git`: https://aur.archlinux.org/packages/mpv-git/
+    $ burgaur -si "partial description"
+
+
+SEE ALSO
+========
+
+* `cower <https://github.com/falconindy/cower>`__
+* `makepkg <https://wiki.archlinux.org/index.php/Makepkg>`__
+
+
+BUGS
+====
+
+Please report bugs to `GitHub <https://github.com/m45t3r/burgaur/issues>`__.
+
+
+.. vim: ts=8 et sw=4 sts=4
