@@ -88,32 +88,32 @@ def query_yes_no(question, default=None):
 def parse_int_from_input(prompt=None):
     """Ask input from user, tries to parse input for integers.
 
-    User may pass only one value ("0"), multiple values separated by
-    comma ("0,1,5") or a range of values separated by dash ("2-8").
-
-    For now this parse is greedy: 1abc2 is a valid input thanks to my
-    lousy regex skills. I may fix this someday.
+    User may pass only one value ("1"), multiple values separated by
+    comma ("1,2,5") or a range of values separated by dash ("2-8") or
+    any combination of above ("1-2,3").
 
     Keyword arguments:
     prompt -- prompt from input() function (default: None)
     """
-    # TODO: this regex is too greedy.
-    regex = re.compile(r"(\d+-\d+)|(\d+)", re.ASCII)
+    exclude_regex = re.compile(r"[^0-9,-]")
+    find_regex = re.compile(r"([0-9]+-[0-9]+)|([0-9]+)")
     while True:
-        user_input = input(prompt)
-        found_items = regex.findall(user_input)
         result = []
-        for item in found_items:
-            if item[0]:
-                i, j = item[0].split("-")
-                result += list(range(int(i), int(j) + 1))
-            if item[1]:
-                result.append(int(item[1]))
-        if result:
+        user_input = input(prompt)
+        # If user entered any invalid character, the exclude_regex will
+        # match something
+        if not exclude_regex.search(user_input):
+            found_items = find_regex.findall(user_input)
+            for item in found_items:
+                if item[0]:
+                    i, j = item[0].split("-")
+                    result += list(range(int(i), int(j) + 1))
+                if item[1]:
+                    result.append(int(item[1]))
             break
         else:
             print("Invalid value. Please enter a number. You may enter "
-                  "multiple values using comma (i.e.: 1,3) or a range of "
+                  "multiple values using comma (i.e.: 1,2,3) or a range of "
                   "values using dash (i.e.: 1-3).", file=sys.stderr)
     return result
 
@@ -346,6 +346,9 @@ def search_install(target, skip_checks=False):
     This function searches the target on AUR, display all results to
     the user in a enumerated way and ask user which ones it should
     install.
+
+    There isn't many sanity checks of the user input. The user may
+    install the same package twice, for example.
 
     Keyword arguments:
     target -- target to search on AUR
