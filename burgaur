@@ -131,15 +131,19 @@ class Burgaur(object):
         filtered_packages = [x for x in installed_packages
                              if x.find(target) >= 0]
 
-        print("Packages to update:", end=" ")
-        print(*filtered_packages, sep=", ")
+        if filtered_packages:
+            print("Packages to update:", end=" ")
+            print(*filtered_packages, sep=", ")
 
-        for package in filtered_packages:
-            try:
-                self.make_install(package, skip_checks=skip_checks)
-            except BurgaurError as e:
-                # Ignore make_install errors in this case
-                print_format_or_exc(e)
+            for package in filtered_packages:
+                try:
+                    self.make_install(package, skip_checks=skip_checks)
+                except BurgaurError as e:
+                    # Ignore make_install errors in this case
+                    print_format_or_exc(e)
+        else:
+            print("No packages with target {} found."
+                  .format(target), file=sys.stderr)
 
     def make_install(self, package, install_deps=False, skip_checks=False):
         """Download, make and install package.
