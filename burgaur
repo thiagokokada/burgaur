@@ -426,7 +426,7 @@ def parse_int_from_input(prompt=None):
 
 def print_format_or_exc(e):
     """Print error in user friendly way or stack trace if in debug mode
-    
+
     Keyword arguments:
     e -- error message from exception
     """
