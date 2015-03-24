@@ -13,6 +13,7 @@ tries to complement other tools.
 """
 
 import argparse
+import glob
 import os
 import re
 import subprocess
@@ -165,7 +166,11 @@ class Burgaur(object):
                 return
 
         target_dir = tempfile.mkdtemp(prefix="burgaur-", dir=self.tempdir)
-        makepkg_cmd = [self.makepkg_path, "--syncdeps"]
+        # makepkg_base_cmd may be used in case the package is splitted.
+        # In this case, even if the user wants to install we don't pass
+        # --install to makepkg, instead we install manually using pacman.
+        makepkg_base_cmd = [self.makepkg_path, "--syncdeps"]
+        makepkg_cmd = list(makepkg_base_cmd)
         if not self.skip_install:
             makepkg_cmd += ["--install"]
         cower_cmd = self.cower_cmd + ["--color=never", "--quiet",
@@ -173,45 +178,55 @@ class Burgaur(object):
                                       "--target", target_dir]
         if install_deps:
             cower_cmd += ["--download"]
+        pacman_cmd = ["sudo", self.pacman_path, "--upgrade"]
+
         try:
             subprocess.check_call(cower_cmd)
         except subprocess.CalledProcessError:
             raise BurgaurError("error while downloading package {} or its "
                                "depedencies".format(package))
         os.chdir(target_dir)
+        package_base = None
         try:
-            packages = os.listdir()
+            packages_dir = os.listdir()
             # We remove and append the package in packages list to ensure
             # that the dependencies are installed before the main package.
             try:
-                packages.remove(package)
-                packages.append(package)
+                packages_dir.remove(package)
+                packages_dir.append(package)
             except ValueError:
                 # We could remove this try by deciding from _get_package_base
                 # output if there is or not a PackageBase, but
                 # _get_package_base is slow since it uses another subprocess.
-                print("Package {} not found, trying to find PackageBase."
+                print("Directory {} not found, trying to find PackageBase."
                       .format(package), file=sys.stderr)
                 package_base = self._get_package_base(package)
                 if package_base:
-                    print("PackageBase {} found. Trying to install it"
+                    print("PackageBase {} found. Trying to build it."
                           .format(package_base))
-                    packages.remove(package_base)
-                    packages.append(package_base)
+                    packages_dir.remove(package_base)
+                    packages_dir.append(package_base)
                 else:
                     raise BurgaurError("directory from package {} not found, "
                                        "and not a splitted package"
                                        .format(package))
-            for package in packages:
-                os.chdir(package)
+            for package_dir in packages_dir:
+                os.chdir(package_dir)
                 if not skip_checks:
                     self.view_in_mc(package)
-                subprocess.check_call(makepkg_cmd)
+                if package_dir == package_base:
+                    subprocess.check_call(makepkg_base_cmd)
+                    if not self.skip_install:
+                        pkg = glob.glob(package + "-*.pkg.tar*")[0]
+                        subprocess.check_call(pacman_cmd + [pkg])
+                else:
+                    subprocess.check_call(makepkg_cmd)
         except subprocess.CalledProcessError:
             raise BurgaurError("error while installing package {}"
                                .format(package))
         finally:
             if not self.keep_files:
+                print("Cleaning up directory {}.".format(target_dir))
                 rmtree(target_dir)
 
     def system_update(self, skip_checks=False):
