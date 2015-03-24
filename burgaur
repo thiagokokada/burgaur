@@ -118,10 +118,8 @@ class Burgaur(object):
         or not unless we build it and try to install, please doesn't
         expect any intelligence from using this function.
 
-        target -- a package name or a generic target; support glob
-        expansion
-        skip_checks -- update all packages without asking for user
-        input; affect make_install function too (default: False)
+        target -- a package name, may be partial
+        skip_checks -- see make_install function (default: False)
         """
         cmd = [self.pacman_path, "--query",
                "--foreign", "--quiet",
