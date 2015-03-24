@@ -128,8 +128,8 @@ class Burgaur(object):
         installed_packages = subprocess.check_output(cmd)
         installed_packages = installed_packages.decode(encoding=self.encoding)
         installed_packages = installed_packages.split("\n")[:-1]
-        filtered_packages = list(filter(lambda x: re.search(target, x),
-                                        installed_packages))
+        filtered_packages = [x for x in installed_packages
+                             if x.find(target) > 0]
 
         print("Packages to update:", end=" ")
         print(*filtered_packages, sep=", ")
@@ -281,7 +281,8 @@ class Burgaur(object):
         result = []
         packages = out.decode(self.encoding).split("\n")[:-1]
         for package in packages:
-            result.append(dict(zip(package_info, package.split("++"))))
+            entry = zip(package_info, package.split("++"))
+            result.append(dict(entry))
         return result
 
     def search_install(self, target, skip_checks=False):
