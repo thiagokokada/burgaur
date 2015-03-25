@@ -280,10 +280,10 @@ class Burgaur(object):
         cmd = self.cower_cmd + ["--format=%c;;%n;;%v;;%d;;%m;;%o;;%t\n",
                                 "--color=never",
                                 "--search", target]
-        p = subprocess.Popen(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out, err = p.communicate()
+        process = subprocess.Popen(cmd,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        out, err = process.communicate()
         if err:
             raise BurgaurError("error while searching for target {}"
                                .format(target))
@@ -444,11 +444,10 @@ def parse_int_from_input(prompt=None):
                     result.append(int(item[1]))
             break
         else:
-            print(t.bold_yellow(
-                  "Invalid value. Please enter a number. You may enter "
-                  "multiple values using comma (i.e.: 1,2,3) or a "
-                  "range of values using dash (i.e.: 1-3)."),
-                  file=sys.stderr)
+            print(t.bold_yellow("Invalid value. Please enter a number. "
+                                "You may enter multiple values using comma "
+                                "(i.e.: 1,2,3) or a range of values using "
+                                "dash (i.e.: 1-3)."), file=sys.stderr)
     return result
 
 
