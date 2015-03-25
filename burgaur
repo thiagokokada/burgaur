@@ -428,7 +428,7 @@ def parse_int_from_input(prompt=None):
     prompt -- prompt from input() function (default: None)
     """
     exclude_regex = re.compile(r"[^0-9,-]")
-    find_regex = re.compile(r"([0-9]+-[0-9]+)|([0-9]+)")
+    find_regex = re.compile(r"([0-9]+-[0-9]+)|(-?[0-9]+)")
     while True:
         result = []
         user_input = input(prompt)
