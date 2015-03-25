@@ -536,6 +536,18 @@ def main():
         sys.exit(1)
     args = parser.parse_args()
 
+    # Yeah, I know, ugly global variable. But I don't know a better way to
+    # handle blessings without passing even uglier instancies to every
+    # class/function.
+    global t
+    if args.color.lower() == "never":
+        t = Terminal(force_styling=None)
+    elif args.color.lower() == "always":
+        t = Terminal(force_styling=True)
+    elif args.color.lower() == "auto":
+        # This is the default, btw
+        t = Terminal(force_styling=False)
+
     # Get executable paths and some important environmental vars
     pacman_path = find_executable("pacman")
     makepkg_path = find_executable("makepkg")
@@ -549,27 +561,18 @@ def main():
 
     # Sanity checks
     if os.geteuid() == 0:
-        sys.exit("You should run {} as a non-root user.".format(sys.argv[0]))
+        sys.exit(t.bold_red("You should run {} as a non-root user."
+                            .format(sys.argv[0])))
     if not pacman_path:
-        sys.exit("Could not find pacman installed. Are you using Arch Linux?")
+        sys.exit(t.bold_red("Could not find pacman installed. Are you using "
+                            "Arch Linux?"))
     if not makepkg_path:
-        sys.exit("Could not find makepkg installed. Are you using Arch Linux?")
+        sys.exit(t.bold_red("Could not find makepkg installed. Are you using "
+                            "Arch Linux?"))
     if not cower_path:
         cower_url = "https://aur.archlinux.org/packages/cower/"
-        sys.exit("Could not find cower installed. Install it from {}"
-                 .format(cower_url))
-
-    # Yeah, I know, ugly global variable. But I don't know a better way to
-    # handle blessings without passing even uglier instancies to every
-    # class/function.
-    global t
-    if args.color.lower() == "never":
-        t = Terminal(force_styling=None)
-    elif args.color.lower() == "always":
-        t = Terminal(force_styling=True)
-    elif args.color.lower() == "auto":
-        # This is the default, btw
-        t = Terminal(force_styling=False)
+        sys.exit(t.bold_red("Could not find cower installed. Install it "
+                            "from {}.".format(cower_url)))
 
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
