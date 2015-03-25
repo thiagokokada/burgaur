@@ -23,12 +23,18 @@ from distutils.spawn import find_executable
 from shutil import rmtree
 from textwrap import dedent
 
+from blessings import Terminal
+
 __author__ = "Thiago Kenji Okada"
 __license__ = "MIT"
 __version__ = "1.0"
 __maintainer__ = "Thiago Kenji Okada"
 __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Stable"
+
+
+# Initialize blessings
+t = Terminal()
 
 
 # Class definitions
@@ -105,7 +111,7 @@ class Burgaur(object):
         elif process.returncode == 0:
             return None
         else:
-            raise BurgaurError("error while checking for updates")
+            raise BurgaurError("cower could not get packages to update")
 
     def force_update(self, target, skip_checks=False):
         """Force update of packages from AUR with target name.
@@ -132,8 +138,8 @@ class Burgaur(object):
                              if x.find(target) >= 0]
 
         if filtered_packages:
-            print("Packages to update:", end=" ")
-            print(*filtered_packages, sep=", ")
+            print("Packages to update:", end=" " + t.bold)
+            print(*filtered_packages, sep=", ", end=t.normal + "\n")
 
             for package in filtered_packages:
                 try:
@@ -142,8 +148,8 @@ class Burgaur(object):
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
         else:
-            print("No packages with target {} found."
-                  .format(target), file=sys.stderr)
+            print(t.bold_yellow("No packages with target {} found"
+                                .format(target)))
 
     def make_install(self, package, install_deps=False, skip_checks=False):
         """Download, make and install package.
@@ -164,7 +170,7 @@ class Burgaur(object):
         process; WARNING: possibly unsafe (default: False)
         """
         if not skip_checks:
-            query = query_yes_no("Do you want to install package {}"
+            query = query_yes_no(t.bold("Do you want to install package {}")
                                  .format(package), default="yes")
             if not query:
                 return
@@ -187,7 +193,7 @@ class Burgaur(object):
         try:
             subprocess.check_call(cower_cmd)
         except subprocess.CalledProcessError:
-            raise BurgaurError("error while downloading package {} or its "
+            raise BurgaurError("cower failed to download {} or its "
                                "depedencies".format(package))
         os.chdir(target_dir)
         package_base = None
@@ -202,12 +208,12 @@ class Burgaur(object):
                 # We could remove this try by deciding from _get_package_base
                 # output if there is or not a PackageBase, but
                 # _get_package_base is slow since it uses another subprocess.
-                print("Directory {} not found, trying to find PackageBase."
-                      .format(package), file=sys.stderr)
+                print(t.bold_yellow("Directory {} not found, trying to find "
+                      "PackageBase.".format(package)), file=sys.stderr)
                 package_base = self._get_package_base(package)
                 if package_base:
-                    print("PackageBase {} found. Trying to build it."
-                          .format(package_base))
+                    print(t.green_bold("PackageBase {} found. Trying to "
+                                       "build from it.".format(package_base)))
                     packages_dir.remove(package_base)
                     packages_dir.append(package_base)
                 else:
@@ -230,7 +236,7 @@ class Burgaur(object):
                                .format(package))
         finally:
             if not self.keep_files:
-                print("Cleaning up directory {}.".format(target_dir))
+                print(t.bold("Cleaning up directory {}.".format(target_dir)))
                 rmtree(target_dir)
 
     def system_update(self, skip_checks=False):
@@ -241,8 +247,8 @@ class Burgaur(object):
         """
         packages = self.check_updates()
         if packages:
-            print("Packages to update:", end=" ")
-            print(*packages, sep=", ")
+            print("Packages to update:", end=" " + t.bold)
+            print(*packages, sep=", ", end=t.normal + "\n")
 
             for package in packages:
                 try:
@@ -251,7 +257,7 @@ class Burgaur(object):
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
         else:
-            print("All packages are up-to-date.")
+            print(t.bold("All packages are up-to-date."))
 
     def search_package(self, target):
         """Search and returns packages that matches target.
@@ -268,10 +274,10 @@ class Burgaur(object):
         Keyword arguments:
         target -- target for 'cower -s target'
         """
-        package_info = ["category", "name", "version",
-                        "description", "maintainer", "votes"]
+        package_info = ["category", "name", "version", "description",
+                        "maintainer", "votes", "out_of_date"]
         # output: package++1.0.0++package description++maintainer++123\n
-        cmd = self.cower_cmd + ["--format=%c++%n++%v++%d++%m++%o\n",
+        cmd = self.cower_cmd + ["--format=%c;;%n;;%v;;%d;;%m;;%o;;%t\n",
                                 "--color=never",
                                 "--search", target]
         p = subprocess.Popen(cmd,
@@ -285,7 +291,7 @@ class Burgaur(object):
         result = []
         packages = out.decode(self.encoding).split("\n")[:-1]
         for package in packages:
-            entry = zip(package_info, package.split("++"))
+            entry = zip(package_info, package.split(";;"))
             result.append(dict(entry))
         return result
 
@@ -306,23 +312,37 @@ class Burgaur(object):
         """
         packages = self.search_package(target)
         if not packages:
-            print("No packages with target {} found".format(target),
-                  file=sys.stderr)
-            return
+            print(t.bold_yellow("No packages with target {} found."
+                                .format(target)))
 
         for i, package in enumerate(packages, start=1):
-            print("{}) {}/{} by {} {} ({})\n    {}"
-                  .format(i, package["category"], package["name"],
-                          package["maintainer"], package["version"],
-                          package["votes"], package["description"]))
+            position = t.bold(str(i) + ")")
+            category = t.bold_magenta(package["category"] + "/")
+            name = t.bold(package["name"])
+            maintainer = "by " + t.bold_yellow(package["maintainer"])
+            if package["out_of_date"] == "no":
+                version = t.bold_green(package["version"])
+            else:
+                version = t.bold_red(package["version"])
+            votes = "(" + package["votes"] + ")"
+            description = "\n    " + package["description"]
+            # I know this seems to be a pretty bad way to format a string,
+            # but there are too many different colors here so we need to
+            # improvise.
+            print(position, category + name, maintainer, version, votes,
+                  description)
 
-        selected_packages = parse_int_from_input("Select packages (use comma "
-                                                 "to select multiple packages,"
-                                                 " dash for ranges): ")
-        for i in selected_packages:
-            if i < 1:
-                raise ValueError("invalid zero/negative value")
-            self.make_install(packages[i - 1]["name"], True, skip_checks)
+        prompt = t.bold("Select packages (use comma to select multiple "
+                        "packages, dash for ranges): ")
+        selected_packages = parse_int_from_input(prompt)
+
+        if selected_packages:
+            for i in selected_packages:
+                if i < 1:
+                    raise ValueError("invalid zero/negative value")
+                self.make_install(packages[i - 1]["name"], True, skip_checks)
+        else:
+            print(t.bold_yellow("No package selected"), file=sys.stderr)
 
     def view_in_mc(self, package, directory="."):
         """"View package contents with Midnight Commander.
@@ -332,8 +352,9 @@ class Burgaur(object):
         directory -- directory to open in mc (default: ".")
         """
         if self.mc_path:  # only runs if mc is installed, otherwise ignore it
-            query = query_yes_no("Do you want to view package {} contents in "
-                                 "mc?".format(package), default="yes")
+            query = query_yes_no(t.bold("Do you want to view package {} "
+                                 "contents in mc?".format(package)),
+                                 default="yes")
             if query:
                 subprocess.call([self.mc_path, directory])
 
@@ -382,7 +403,7 @@ def query_yes_no(question, default=None):
     elif default == "no":
         prompt = " [y/N] "
     else:
-        raise ValueError("Invalid default answer: {}".format(default))
+        raise ValueError("invalid default answer: {}".format(default))
 
     while True:
         print("{}{}".format(question, prompt), end="")
@@ -393,7 +414,7 @@ def query_yes_no(question, default=None):
             else:
                 return valid[default]
         except KeyError:
-            print("Please respond with (y)es or (n)o.")
+            print(t.bold_yellow("Please respond with (y)es or (n)o."))
 
 
 def parse_int_from_input(prompt=None):
@@ -423,9 +444,11 @@ def parse_int_from_input(prompt=None):
                     result.append(int(item[1]))
             break
         else:
-            print("Invalid value. Please enter a number. You may enter "
-                  "multiple values using comma (i.e.: 1,2,3) or a range of "
-                  "values using dash (i.e.: 1-3).", file=sys.stderr)
+            print(t.bold_yellow(
+                  "Invalid value. Please enter a number. You may enter "
+                  "multiple values using comma (i.e.: 1,2,3) or a "
+                  "range of values using dash (i.e.: 1-3)."),
+                  file=sys.stderr)
     return result
 
 
@@ -439,7 +462,7 @@ def print_format_or_exc(e):
         import traceback
         traceback.print_exc()
     else:
-        print("Error: {}".format(e), file=sys.stderr)
+        print(t.bold_red("Error:"), t.bold(str(e)), file=sys.stderr)
 
 
 # main() and auxiliary functions
@@ -548,7 +571,7 @@ def main():
         if args.search_install:
             burgaur.search_install(args.search_install)
     except KeyboardInterrupt:
-        sys.exit("\nUser cancelled operation.")
+        sys.exit(t.bold_yellow("\nUser cancelled operation."))
     except Exception as e:
         print_format_or_exc(e)
         sys.exit(1)
