@@ -53,6 +53,9 @@ optional arguments
 --skip-install                      do not install packages after build,
                                     assume '--keep-files'
 
+-c, --color WHEN                    use colored output. WHEN is 'never',
+                                    'always' or 'auto' (default)
+
 --version                           show program's version number and exit
 
 

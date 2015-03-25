@@ -209,7 +209,8 @@ class Burgaur(object):
                 # output if there is or not a PackageBase, but
                 # _get_package_base is slow since it uses another subprocess.
                 print(t.bold_yellow("Directory {} not found, trying to find "
-                      "PackageBase.".format(package)), file=sys.stderr)
+                                    "PackageBase."
+                                    .format(package)), file=sys.stderr)
                 package_base = self._get_package_base(package)
                 if package_base:
                     print(t.green_bold("PackageBase {} found. Trying to "
@@ -353,8 +354,8 @@ class Burgaur(object):
         """
         if self.mc_path:  # only runs if mc is installed, otherwise ignore it
             query = query_yes_no(t.bold("Do you want to view package {} "
-                                 "contents in mc?".format(package)),
-                                 default="yes")
+                                        "contents in mc?"
+                                        .format(package)), default="yes")
             if query:
                 subprocess.call([self.mc_path, directory])
 
@@ -505,6 +506,10 @@ def _argparser():
     parser.add_argument("--skip-install", action="store_true",
                         help="do not install packages after build"
                         "\nassume '--keep-files'")
+    parser.add_argument("-c", "--color", metavar="WHEN", action="store",
+                        default="auto",
+                        help="use colored output. WHEN is 'never', 'always'"
+                        "\nor 'auto' (default)")
     parser.add_argument("--version", action="version", version=version_info)
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
@@ -555,6 +560,18 @@ def main():
         cower_url = "https://aur.archlinux.org/packages/cower/"
         sys.exit("Could not find cower installed. Install it from {}"
                  .format(cower_url))
+
+    # Yeah, I know, ugly global variable. But I don't know a better way to
+    # handle blessings without passing even uglier instancies to every
+    # class/function.
+    global t
+    if args.color.lower() == "never":
+        t = Terminal(force_styling=None)
+    elif args.color.lower() == "always":
+        t = Terminal(force_styling=True)
+    elif args.color.lower() == "auto":
+        # This is the default, btw
+        t = Terminal(force_styling=False)
 
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
