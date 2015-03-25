@@ -183,8 +183,7 @@ class Burgaur(object):
         makepkg_cmd = list(makepkg_base_cmd)
         if not self.skip_install:
             makepkg_cmd += ["--install"]
-        cower_cmd = self.cower_cmd + ["--color=never", "--quiet",
-                                      "--download", package,
+        cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
         if install_deps:
             cower_cmd += ["--download"]
