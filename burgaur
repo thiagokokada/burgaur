@@ -62,16 +62,16 @@ class Burgaur(object):
     cower_raw_options -- extra arguments to use by default when
     running cower. WARNING: there is no sanity checking, this may
     break things (default: None)
-    skip_install -- do not install packages after build. If True
-    assume keep_files=True too (default: False)
-    keep_files -- do not remove temporary directory after build
+    noinstall -- do not install packages after build. If True
+    assume nodelete=True too (default: False)
+    nodelete -- do not remove temporary directory after build
     (default: False)
     """
 
     def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
                  cower_path="cower", mc_path="mc", encoding="utf8",
-                 tempdir=None, cower_raw_options=None, skip_install=False,
-                 keep_files=False):
+                 tempdir=None, cower_raw_options=None, noinstall=False,
+                 nodelete=False):
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
@@ -81,12 +81,12 @@ class Burgaur(object):
         self.cower_cmd = [self.cower_path]
         if cower_raw_options:
             self.cower_cmd += cower_raw_options
-        if skip_install:
-            self.skip_install = True
-            self.keep_files = True
+        if noinstall:
+            self.noinstall = True
+            self.nodelete = True
         else:
-            self.skip_install = False
-            self.keep_files = keep_files
+            self.noinstall = False
+            self.nodelete = nodelete
 
     def check_updates(self):
         """Check available updates for AUR packages.
@@ -113,7 +113,7 @@ class Burgaur(object):
         else:
             raise BurgaurError("cower could not get packages to update")
 
-    def force_update(self, target, skip_checks=False):
+    def force_update(self, target, noconfirm=False):
         """Force update of packages from AUR with target name.
 
         The user case of this function is to update VCS packages. For
@@ -126,7 +126,7 @@ class Burgaur(object):
         expect any intelligence from using this function.
 
         target -- a package name, may be partial
-        skip_checks -- see make_install function (default: False)
+        noconfirm -- see make_install function (default: False)
         """
         cmd = [self.pacman_path, "--query",
                "--foreign", "--quiet",
@@ -143,7 +143,7 @@ class Burgaur(object):
 
             for package in filtered_packages:
                 try:
-                    self.make_install(package, skip_checks=skip_checks)
+                    self.make_install(package, noconfirm=noconfirm)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
@@ -151,7 +151,7 @@ class Burgaur(object):
             print(t.bold_yellow("No packages with target {} found"
                                 .format(target)))
 
-    def make_install(self, package, install_deps=False, skip_checks=False):
+    def make_install(self, package, install_deps=False, noconfirm=False):
         """Download, make and install package.
 
         This function creates a temporary directory, downloads the
@@ -166,10 +166,10 @@ class Burgaur(object):
         install_deps -- use cower '-dd' instead of only '-d' to
         download AUR dependencies and install them before the main
         package (default: False)
-        skip_checks -- skip interactive prompts during install
+        noconfirm -- skip interactive prompts during install
         process; WARNING: possibly unsafe (default: False)
         """
-        if not skip_checks:
+        if not noconfirm:
             query = query_yes_no(t.bold("Do you want to install package {}")
                                  .format(package), default="yes")
             if not query:
@@ -184,11 +184,11 @@ class Burgaur(object):
         pacman_cmd = ["sudo", self.pacman_path, "--upgrade"]
         cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
-        if not self.skip_install:
+        if not self.noinstall:
             makepkg_cmd += ["--install"]
-        if self.skip_checks:
+        if self.noconfirm:
             makepkg_cmd += ["--noconfirm"]
-            pacman_cms += ["--noconfirm"]
+            pacman_cmd += ["--noconfirm"]
         if install_deps:
             cower_cmd += ["--download"]
 
@@ -225,11 +225,11 @@ class Burgaur(object):
                                        .format(package))
             for package_dir in packages_dir:
                 os.chdir(package_dir)
-                if not skip_checks:
+                if not noconfirm:
                     self.view_in_mc(package)
                 if package_dir == package_base:
                     subprocess.check_call(makepkg_base_cmd)
-                    if not self.skip_install:
+                    if not self.noinstall:
                         pkg = glob.glob(package + "-*.pkg.tar*")[0]
                         subprocess.check_call(pacman_cmd + [pkg])
                 else:
@@ -238,15 +238,15 @@ class Burgaur(object):
             raise BurgaurError("error while installing package {}"
                                .format(package))
         finally:
-            if not self.keep_files:
+            if not self.nodelete:
                 print(t.bold("Cleaning up directory {}.".format(target_dir)))
                 rmtree(target_dir)
 
-    def system_update(self, skip_checks=False):
+    def system_update(self, noconfirm=False):
         """Updates all AUR packages that have updates.
 
         Keyword arguments:
-        skip_checks -- see make_install function (default: False)
+        noconfirm -- see make_install function (default: False)
         """
         packages = self.check_updates()
         if packages:
@@ -255,7 +255,7 @@ class Burgaur(object):
 
             for package in packages:
                 try:
-                    self.make_install(package, skip_checks=skip_checks)
+                    self.make_install(package, noconfirm=noconfirm)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
@@ -298,7 +298,7 @@ class Burgaur(object):
             result.append(dict(entry))
         return result
 
-    def search_install(self, target, skip_checks=False):
+    def search_install(self, target, noconfirm=False):
         """Search target, display packages that match it and install
         them.
 
@@ -311,7 +311,7 @@ class Burgaur(object):
 
         Keyword arguments:
         target -- target to search on AUR
-        skip_checks -- see make_install function (default: False)
+        noconfirm -- see make_install function (default: False)
         """
         packages = self.search_package(target)
         if not packages:
@@ -343,7 +343,7 @@ class Burgaur(object):
             for i in selected_packages:
                 if i < 1:
                     raise ValueError("invalid zero/negative value")
-                self.make_install(packages[i - 1]["name"], True, skip_checks)
+                self.make_install(packages[i - 1]["name"], True, noconfirm)
         else:
             print(t.bold_yellow("No package selected"), file=sys.stderr)
 
@@ -498,15 +498,15 @@ def _argparser():
     parser.add_argument("--cower-raw-options", nargs=argparse.REMAINDER,
                         default=[], help="pass arguments directly to cower"
                         "\nWARNING: no sanity check, may break things")
-    parser.add_argument("--skip-checks", action="store_true",
+    parser.add_argument("--noconfirm", action="store_true",
                         help="skip confirmation prompts during install process"
                         "\nWARNING: may be unsafe")
-    parser.add_argument("--keep-files", action="store_true",
+    parser.add_argument("--nodelete", action="store_true",
                         help="do not remove temporary build directory after"
                         "\ninstall")
-    parser.add_argument("--skip-install", action="store_true",
+    parser.add_argument("--noinstall", action="store_true",
                         help="do not install packages after build"
-                        "\nassume '--keep-files'")
+                        "\nassume '--nodelete'")
     parser.add_argument("-c", "--color", metavar="WHEN", action="store",
                         default="auto",
                         help="use colored output. WHEN is 'never', 'always'"
@@ -580,15 +580,15 @@ def main():
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
                       encoding, tempdir, args.cower_raw_options,
-                      args.skip_install, args.keep_files)
+                      args.noinstall, args.nodelete)
 
     try:
         for target in args.force_update:
-            burgaur.force_update(target, args.skip_checks)
+            burgaur.force_update(target, args.noconfirm)
         for package in args.make_install:
-            burgaur.make_install(package, True, args.skip_checks)
+            burgaur.make_install(package, True, args.noconfirm)
         if args.system_update:
-            burgaur.system_update(args.skip_checks)
+            burgaur.system_update(args.noconfirm)
         if args.search_install:
             burgaur.search_install(args.search_install)
     except KeyboardInterrupt:

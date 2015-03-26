@@ -44,14 +44,15 @@ optional arguments
 --cower-raw-options OPTIONS         pass arguments directly to cower,
                                     WARNING: no sanity check, may break things
 
---skip-checks                       skip confirmation prompts during install
-                                    process, WARNING: may be unsafe
+--noconfirm                         skip confirmation prompts during install
+                                    process, passed to pacman/makepkg too
+                                    WARNING: may be unsafe
 
---keep-files                        do not remove temporary build directory
+--nodelete                          do not remove temporary build directory
                                     after install
 
---skip-install                      do not install packages after build,
-                                    assume '--keep-files'
+--noinstall                         do not install packages after build,
+                                    assume '--nodelete'
 
 -c, --color WHEN                    use colored output. WHEN is 'never',
                                     'always' or 'auto' (default)
@@ -126,14 +127,14 @@ use using:
 
 ::
 
-    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --keep-files
+    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --nodelete
 
 
 Or if you just want to build a package but to not install it:
 
 ::
 
-    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --skip-install
+    $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --noinstall
 
 
 To install a package that you only remember some information (like part of the
