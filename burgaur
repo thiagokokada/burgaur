@@ -66,12 +66,14 @@ class Burgaur(object):
     assume nodelete=True too (default: False)
     nodelete -- do not remove temporary directory after build
     (default: False)
+    noconfirm -- skip interactive prompts during install process;
+    WARNING: possibly unsafe (default: False)
     """
 
     def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
                  cower_path="cower", mc_path="mc", encoding="utf8",
                  tempdir=None, cower_raw_options=None, noinstall=False,
-                 nodelete=False):
+                 nodelete=False, noconfirm=False):
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
@@ -87,6 +89,7 @@ class Burgaur(object):
         else:
             self.noinstall = False
             self.nodelete = nodelete
+        self.noconfirm = noconfirm
 
     def check_updates(self):
         """Check available updates for AUR packages.
@@ -113,7 +116,7 @@ class Burgaur(object):
         else:
             raise BurgaurError("cower could not get packages to update")
 
-    def force_update(self, target, noconfirm=False):
+    def force_update(self, target):
         """Force update of packages from AUR with target name.
 
         The user case of this function is to update VCS packages. For
@@ -125,8 +128,7 @@ class Burgaur(object):
         or not unless we build it and try to install, please doesn't
         expect any intelligence from using this function.
 
-        target -- a package name, may be partial
-        noconfirm -- see make_install function (default: False)
+        target -- a package name, may be partial match
         """
         cmd = [self.pacman_path, "--query",
                "--foreign", "--quiet",
@@ -143,7 +145,7 @@ class Burgaur(object):
 
             for package in filtered_packages:
                 try:
-                    self.make_install(package, noconfirm=noconfirm)
+                    self.make_install(package)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
@@ -151,7 +153,7 @@ class Burgaur(object):
             print(t.bold_yellow("No packages with target {} found"
                                 .format(target)))
 
-    def make_install(self, package, install_deps=False, noconfirm=False):
+    def make_install(self, package, install_deps=False):
         """Download, make and install package.
 
         This function creates a temporary directory, downloads the
@@ -166,10 +168,8 @@ class Burgaur(object):
         install_deps -- use cower '-dd' instead of only '-d' to
         download AUR dependencies and install them before the main
         package (default: False)
-        noconfirm -- skip interactive prompts during install
-        process; WARNING: possibly unsafe (default: False)
         """
-        if not noconfirm:
+        if not self.noconfirm:
             query = query_yes_no(t.bold("Do you want to install package {}")
                                  .format(package), default="yes")
             if not query:
@@ -225,7 +225,7 @@ class Burgaur(object):
                                        .format(package))
             for package_dir in packages_dir:
                 os.chdir(package_dir)
-                if not noconfirm:
+                if not self.noconfirm:
                     self.view_in_mc(package)
                 if package_dir == package_base:
                     subprocess.check_call(makepkg_base_cmd)
@@ -242,12 +242,8 @@ class Burgaur(object):
                 print(t.bold("Cleaning up directory {}.".format(target_dir)))
                 rmtree(target_dir)
 
-    def system_update(self, noconfirm=False):
-        """Updates all AUR packages that have updates.
-
-        Keyword arguments:
-        noconfirm -- see make_install function (default: False)
-        """
+    def system_update(self):
+        """Updates all AUR packages that have updates."""
         packages = self.check_updates()
         if packages:
             print("Packages to update:", end=" " + t.bold)
@@ -255,7 +251,7 @@ class Burgaur(object):
 
             for package in packages:
                 try:
-                    self.make_install(package, noconfirm=noconfirm)
+                    self.make_install(package)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
@@ -298,7 +294,7 @@ class Burgaur(object):
             result.append(dict(entry))
         return result
 
-    def search_install(self, target, noconfirm=False):
+    def search_install(self, target):
         """Search target, display packages that match it and install
         them.
 
@@ -311,7 +307,6 @@ class Burgaur(object):
 
         Keyword arguments:
         target -- target to search on AUR
-        noconfirm -- see make_install function (default: False)
         """
         packages = self.search_package(target)
         if not packages:
@@ -343,7 +338,7 @@ class Burgaur(object):
             for i in selected_packages:
                 if i < 1:
                     raise ValueError("invalid zero/negative value")
-                self.make_install(packages[i - 1]["name"], True, noconfirm)
+                self.make_install(packages[i - 1]["name"], True)
         else:
             print(t.bold_yellow("No package selected"), file=sys.stderr)
 
@@ -580,15 +575,15 @@ def main():
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
                       encoding, tempdir, args.cower_raw_options,
-                      args.noinstall, args.nodelete)
+                      args.noinstall, args.nodelete, args.noconfirm)
 
     try:
         for target in args.force_update:
-            burgaur.force_update(target, args.noconfirm)
+            burgaur.force_update(target)
         for package in args.make_install:
-            burgaur.make_install(package, True, args.noconfirm)
+            burgaur.make_install(package, True)
         if args.system_update:
-            burgaur.system_update(args.noconfirm)
+            burgaur.system_update()
         if args.search_install:
             burgaur.search_install(args.search_install)
     except KeyboardInterrupt:
