@@ -181,13 +181,16 @@ class Burgaur(object):
         # --install to makepkg, instead we install manually using pacman.
         makepkg_base_cmd = [self.makepkg_path, "--syncdeps"]
         makepkg_cmd = list(makepkg_base_cmd)
-        if not self.skip_install:
-            makepkg_cmd += ["--install"]
+        pacman_cmd = ["sudo", self.pacman_path, "--upgrade"]
         cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
+        if not self.skip_install:
+            makepkg_cmd += ["--install"]
+        if self.skip_checks:
+            makepkg_cmd += ["--noconfirm"]
+            pacman_cms += ["--noconfirm"]
         if install_deps:
             cower_cmd += ["--download"]
-        pacman_cmd = ["sudo", self.pacman_path, "--upgrade"]
 
         try:
             subprocess.check_call(cower_cmd)
