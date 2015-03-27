@@ -45,10 +45,11 @@ __status__ = "Stable"
 
 
 # Define common print formatting
-print_info = lambda x: cprint(x, attrs=["bold"])
-print_ok = lambda x: cprint(x, "green", attrs=["bold"])
-print_warn = lambda x: cprint(x, "yellow", attrs=["bold"])
-print_error = lambda x: cprint(x, "red", attrs=["bold"], file=sys.stderr)
+print_info = lambda x, **kwargs: cprint(x, attrs=["bold"], **kwargs)
+print_ok = lambda x, **kwargs: cprint(x, "green", attrs=["bold"], **kwargs)
+print_warn = lambda x, **kwargs: cprint(x, "yellow", attrs=["bold"], **kwargs)
+print_error = lambda x, **kwargs: cprint(x, "red", attrs=["bold"],
+                                         file=sys.stderr, **kwargs)
 
 
 # Class definitions
