@@ -23,7 +23,18 @@ from distutils.spawn import find_executable
 from shutil import rmtree
 from textwrap import dedent
 
-from blessings import Terminal
+# termcolor function dummies
+dummy_colored = lambda x, color=None, on_color=None, attrs=None: x
+dummy_cprint = lambda x, color=None, on_color=None, attrs=None, **kwargs: \
+               print(x, **kwargs)
+try:
+    from termcolor import colored, cprint
+except ImportError:
+    print("python-termcolor is not installed, no color support.",
+          file=sys.stderr)
+    colored = dummy_colored
+    cprint = dummy_cprint
+
 
 __author__ = "Thiago Kenji Okada"
 __license__ = "MIT"
@@ -33,8 +44,11 @@ __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Stable"
 
 
-# Initialize blessings
-t = Terminal()
+# Define common print formatting
+print_info = lambda x: cprint(x, attrs=["bold"])
+print_ok = lambda x: cprint(x, "green", attrs=["bold"])
+print_warn = lambda x: cprint(x, "yellow", attrs=["bold"])
+print_error = lambda x: cprint(x, "red", attrs=["bold"], file=sys.stderr)
 
 
 # Class definitions
@@ -140,8 +154,8 @@ class Burgaur(object):
                              if x.find(target) >= 0]
 
         if filtered_packages:
-            print("Packages to update:", end=" " + t.bold)
-            print(*filtered_packages, sep=", ", end=t.normal + "\n")
+            print("Packages to update:", end=" ")
+            print_info(", ".join(filtered_packages))
 
             for package in filtered_packages:
                 try:
@@ -150,8 +164,7 @@ class Burgaur(object):
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
         else:
-            print(t.bold_yellow("No packages with target {} found"
-                                .format(target)))
+            print_warn("No packages with target {} found".format(target))
 
     def make_install(self, package, install_deps=False):
         """Download, make and install package.
@@ -170,7 +183,7 @@ class Burgaur(object):
         package (default: False)
         """
         if not self.noconfirm:
-            query = query_yes_no(t.bold("Do you want to install package {}")
+            query = query_yes_no("Do you want to install package {}"
                                  .format(package), default="yes")
             if not query:
                 return
@@ -210,13 +223,12 @@ class Burgaur(object):
                 # We could remove this try by deciding from _get_package_base
                 # output if there is or not a PackageBase, but
                 # _get_package_base is slow since it uses another subprocess.
-                print(t.bold_yellow("Directory {} not found, trying to find "
-                                    "PackageBase."
-                                    .format(package)), file=sys.stderr)
+                print_warn("Directory {} not found, trying to find "
+                           "PackageBase.".format(package))
                 package_base = self._get_package_base(package)
                 if package_base:
-                    print(t.green_bold("PackageBase {} found. Trying to "
-                                       "build from it.".format(package_base)))
+                    print_ok("PackageBase {} found. Trying to build from it."
+                             .format(package_base))
                     packages_dir.remove(package_base)
                     packages_dir.append(package_base)
                 else:
@@ -239,15 +251,15 @@ class Burgaur(object):
                                .format(package))
         finally:
             if not self.nodelete:
-                print(t.bold("Cleaning up directory {}.".format(target_dir)))
+                print_info("Cleaning up directory {}.".format(target_dir))
                 rmtree(target_dir)
 
     def system_update(self):
         """Updates all AUR packages that have updates."""
         packages = self.check_updates()
         if packages:
-            print("Packages to update:", end=" " + t.bold)
-            print(*packages, sep=", ", end=t.normal + "\n")
+            print("Packages to update:", end=" ")
+            print_info(", ".join(packages))
 
             for package in packages:
                 try:
@@ -256,7 +268,7 @@ class Burgaur(object):
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
         else:
-            print(t.bold("All packages are up-to-date."))
+            print_ok("All packages are up-to-date.")
 
     def search_package(self, target):
         """Search and returns packages that matches target.
@@ -310,18 +322,19 @@ class Burgaur(object):
         """
         packages = self.search_package(target)
         if not packages:
-            print(t.bold_yellow("No packages with target {} found."
-                                .format(target)))
+            print_warn("No packages with target {} found.".format(target))
 
         for i, package in enumerate(packages, start=1):
-            position = t.bold(str(i) + ")")
-            category = t.bold_magenta(package["category"] + "/")
-            name = t.bold(package["name"])
-            maintainer = "by " + t.bold_yellow(package["maintainer"])
+            position = colored(str(i) + ")", attrs=["bold"])
+            category = colored(package["category"] + "/", "magenta",
+                               attrs=["bold"])
+            name = colored(package["name"], attrs=["bold"])
+            maintainer = "by " + colored(package["maintainer"], "yellow",
+                                         attrs=["bold"])
             if package["out_of_date"] == "no":
-                version = t.bold_green(package["version"])
+                version = colored(package["version"], "green", attrs=["bold"])
             else:
-                version = t.bold_red(package["version"])
+                version = colored(package["version"], "red", attrs=["bold"])
             votes = "(" + package["votes"] + ")"
             description = "\n    " + package["description"]
             # I know this seems to be a pretty bad way to format a string,
@@ -330,9 +343,9 @@ class Burgaur(object):
             print(position, category + name, maintainer, version, votes,
                   description)
 
-        prompt = t.bold("Select packages (use comma to select multiple "
-                        "packages, dash for ranges): ")
-        selected_packages = parse_int_from_input(prompt)
+        selected_packages = parse_int_from_input("Select packages (use comma "
+                                                 "to select multiple packages,"
+                                                 " dash for ranges): ")
 
         if selected_packages:
             for i in selected_packages:
@@ -340,7 +353,7 @@ class Burgaur(object):
                     raise ValueError("invalid zero/negative value")
                 self.make_install(packages[i - 1]["name"], True)
         else:
-            print(t.bold_yellow("No package selected"), file=sys.stderr)
+            print_warn("No package selected")
 
     def view_in_mc(self, package, directory="."):
         """"View package contents with Midnight Commander.
@@ -350,9 +363,8 @@ class Burgaur(object):
         directory -- directory to open in mc (default: ".")
         """
         if self.mc_path:  # only runs if mc is installed, otherwise ignore it
-            query = query_yes_no(t.bold("Do you want to view package {} "
-                                        "contents in mc?"
-                                        .format(package)), default="yes")
+            query = query_yes_no("Do you want to view package {} contents "
+                                 "in mc?".format(package), default="yes")
             if query:
                 subprocess.call([self.mc_path, directory])
 
@@ -404,7 +416,8 @@ def query_yes_no(question, default=None):
         raise ValueError("invalid default answer: {}".format(default))
 
     while True:
-        print("{}{}".format(question, prompt), end="")
+        question = "{}{}".format(colored(question, attrs=["bold"]), prompt)
+        print(question, end="")
         choice = input().lower()
         try:
             if choice:
@@ -412,7 +425,7 @@ def query_yes_no(question, default=None):
             else:
                 return valid[default]
         except KeyError:
-            print(t.bold_yellow("Please respond with (y)es or (n)o."))
+            print_warn("Please respond with (y)es or (n)o.")
 
 
 def parse_int_from_input(prompt=None):
@@ -429,7 +442,7 @@ def parse_int_from_input(prompt=None):
     find_regex = re.compile(r"([0-9]+-[0-9]+)|(-?[0-9]+)")
     while True:
         result = []
-        user_input = input(prompt)
+        user_input = input(colored(prompt, attrs=["bold"]))
         # If user entered any invalid character, the exclude_regex will
         # match something
         if not exclude_regex.search(user_input):
@@ -442,15 +455,14 @@ def parse_int_from_input(prompt=None):
                     result.append(int(item[1]))
             break
         else:
-            print(t.bold_yellow("Invalid value. Please enter a number. "
-                                "You may enter multiple values using comma "
-                                "(i.e.: 1,2,3) or a range of values using "
-                                "dash (i.e.: 1-3)."), file=sys.stderr)
+            print_warn("Invalid value. Please enter a number. You may enter "
+                       "multiple values using comma (i.e.: 1,2,3) or a range "
+                       "of values using dash (i.e.: 1-3).")
     return result
 
 
 def print_format_or_exc(e):
-    """Print error in user friendly way or stack trace if in debug mode
+    """Print error formatted or stack trace if in debug mode.
 
     Keyword arguments:
     e -- error message from exception
@@ -459,7 +471,14 @@ def print_format_or_exc(e):
         import traceback
         traceback.print_exc()
     else:
-        print(t.bold_red("Error:"), t.bold(str(e)), file=sys.stderr)
+        print_error(str(e).capitalize())
+
+
+def _disable_termcolor():
+    """Disable termcolor by replacing termcolor functions with dummies."""
+    global colored, cprint
+    colored = dummy_colored
+    cprint = dummy_cprint
 
 
 # main() and auxiliary functions
@@ -537,14 +556,14 @@ def main():
     # Yeah, I know, ugly global variable. But I don't know a better way to
     # handle blessings without passing even uglier instancies to every
     # class/function.
-    global t
-    if args.color.lower() == "never":
-        t = Terminal(force_styling=None)
-    elif args.color.lower() == "always":
-        t = Terminal(force_styling=True)
+    if args.color.lower() == "always":
+        pass
     elif args.color.lower() == "auto":
         # This is the default, btw
-        t = Terminal(force_styling=False)
+        if not sys.stdout.isatty():
+            _disable_termcolor()
+    elif args.color.lower() == "never":
+        _disable_termcolor()
 
     # Get executable paths and some important environmental vars
     pacman_path = find_executable("pacman")
@@ -559,18 +578,19 @@ def main():
 
     # Sanity checks
     if os.geteuid() == 0:
-        sys.exit(t.bold_red("You should run {} as a non-root user."
-                            .format(sys.argv[0])))
+        print_error("You should run {} as a non-root user."
+                    .format(sys.argv[0]))
+        sys.exit(1)
     if not pacman_path:
-        sys.exit(t.bold_red("Could not find pacman installed. Are you using "
-                            "Arch Linux?"))
+        print_error("Could not find pacman installed. Are you using "
+                    "Arch Linux?")
     if not makepkg_path:
-        sys.exit(t.bold_red("Could not find makepkg installed. Are you using "
-                            "Arch Linux?"))
+        print_error("Could not find makepkg installed. Are you using "
+                    "Arch Linux?")
     if not cower_path:
         cower_url = "https://aur.archlinux.org/packages/cower/"
-        sys.exit(t.bold_red("Could not find cower installed. Install it "
-                            "from {}.".format(cower_url)))
+        print_error("Could not find cower installed. Install it from {}."
+                    .format(cower_url))
 
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
@@ -587,7 +607,8 @@ def main():
         if args.search_install:
             burgaur.search_install(args.search_install)
     except KeyboardInterrupt:
-        sys.exit(t.bold_yellow("\nUser cancelled operation."))
+        print_error("\nUser cancelled operation.")
+        sys.exit(1)
     except Exception as e:
         print_format_or_exc(e)
         sys.exit(1)

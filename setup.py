@@ -20,6 +20,7 @@ setup(
     license=burgaur.__license__,
     url="https://github.com/m45t3r/burgaur",
     scripts=["burgaur"],
+    install_requires=["termcolor"],
     platforms=["Linux"],
     long_description=read("README.rst"),
 )
