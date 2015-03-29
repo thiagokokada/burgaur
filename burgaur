@@ -376,6 +376,8 @@ class Burgaur(object):
                 subprocess.call([self.mc_path, directory])
             return query
         else:
+            print_warn("Midnight Commander is not installed, skipping "
+                       "package {} checks.".format(package))
             return False
 
     def _get_package_base(self, package):
