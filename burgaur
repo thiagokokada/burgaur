@@ -166,7 +166,7 @@ class Burgaur(object):
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
         else:
-            print_warn("No packages with target {} found".format(target))
+            print_warn("No packages with target {} found.".format(target))
 
     def make_install(self, package, install_deps=False):
         """Download, make and install package.
