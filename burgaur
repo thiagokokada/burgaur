@@ -240,7 +240,10 @@ class Burgaur(object):
             for package_dir in packages_dir:
                 os.chdir(package_dir)
                 if not self.noconfirm:
-                    self.view_in_mc(package)
+                    while True:
+                        answer = self.view_in_mc(package)
+                        if not answer:
+                            break
                 if package_dir == package_base:
                     subprocess.check_call(makepkg_base_cmd)
                     if not self.noinstall:
@@ -360,6 +363,8 @@ class Burgaur(object):
     def view_in_mc(self, package, directory="."):
         """"View package contents with Midnight Commander.
 
+        Returns True if user viewed package in mc or False if not.
+
         Keyword arguments:
         package -- package name
         directory -- directory to open in mc (default: ".")
@@ -369,6 +374,9 @@ class Burgaur(object):
                                  "in mc?".format(package), default="yes")
             if query:
                 subprocess.call([self.mc_path, directory])
+            return query
+        else:
+            return False
 
     def _get_package_base(self, package):
         """Get package base name.
