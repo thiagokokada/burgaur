@@ -358,7 +358,7 @@ class Burgaur(object):
                     raise ValueError("invalid zero/negative value")
                 self.make_install(packages[i - 1]["name"], True)
         else:
-            print_warn("No package selected")
+            print_warn("No package selected.")
 
     def view_in_mc(self, package, directory="."):
         """"View package contents with Midnight Commander.
