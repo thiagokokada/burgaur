@@ -212,9 +212,11 @@ class Burgaur(object):
         except subprocess.CalledProcessError:
             raise BurgaurError("cower failed to download {} or its "
                                "depedencies".format(package))
+
         os.chdir(target_dir)
         package_base = None
         try:
+            # Parse packages to install
             packages_dir = os.listdir()
             # We remove and append the package in packages list to ensure
             # that the dependencies are installed before the main package.
@@ -237,13 +239,29 @@ class Burgaur(object):
                     raise BurgaurError("directory from package {} not found, "
                                        "and not a splitted package"
                                        .format(package))
+
+            # Show to user which packages we are installing (including deps)
+            prompt = "Installing"
+            if install_deps:
+                prompt += " (including dependencies)"
+            print(prompt, end=": ")
+            print_info(", ".join(packages_dir))
+
+            # Install packages
             for package_dir in packages_dir:
+                # Change to current package directory
                 os.chdir(package_dir)
                 if not self.noconfirm:
+                    # Until user answer "No" we keep asking for view in mc.
+                    # This is similar to what yaourt does, and is more secure.
                     while True:
                         answer = self.view_in_mc(package)
                         if not answer:
                             break
+                # This case only happens when we are installing a splitted
+                # package. In this case we can't use 'makepkg --install'
+                # option, since it would try to install all packages instead
+                # of the one we selected.
                 if package_dir == package_base:
                     subprocess.check_call(makepkg_base_cmd)
                     if not self.noinstall:
@@ -251,13 +269,18 @@ class Burgaur(object):
                         subprocess.check_call(pacman_cmd + [pkg])
                 else:
                     subprocess.check_call(makepkg_cmd)
+                # Go back to the original directory to build next package
                 os.chdir(target_dir)
+
+        # If anything goes wrong raise an error
         except subprocess.CalledProcessError:
             raise BurgaurError("error while installing package {}"
                                .format(package))
+
+        # Remove temporary directory after everything (even in case of error)
         finally:
             if not self.nodelete:
-                print_info("Cleaning up directory {}.".format(target_dir))
+                print_info("Removing directory {}.".format(target_dir))
                 rmtree(target_dir)
 
     def system_update(self):
