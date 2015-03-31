@@ -611,14 +611,14 @@ def main():
                       args.noinstall, args.nodelete, args.noconfirm)
 
     try:
-        for target in args.force_update:
-            burgaur.force_update(target)
-        for package in args.make_install:
-            burgaur.make_install(package, install_deps=True)
         if args.system_update:
             burgaur.system_update()
         if args.search_install:
             burgaur.search_install(args.search_install)
+        for target in args.force_update:
+            burgaur.force_update(target)
+        for package in args.make_install:
+            burgaur.make_install(package, install_deps=True)
     except KeyboardInterrupt:
         print_error("\nUser cancelled operation.")
         sys.exit(1)
