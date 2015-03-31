@@ -1,7 +1,7 @@
 # Maintainer: Thiago Kenji Okada <thiago DOT mast3r AT gmail DOT com>
 
 pkgname='burgaur'
-pkgver=1.2
+pkgver=1.3
 pkgrel=1
 pkgdesc='A delicious AUR helper. Made from cower.'
 arch=('any')
