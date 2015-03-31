@@ -255,7 +255,7 @@ class Burgaur(object):
                     # Until user answer "No" we keep asking for view in mc.
                     # This is similar to what yaourt does, and is more secure.
                     while True:
-                        answer = self.view_in_mc(package)
+                        answer = self.view_in_mc(package_dir)
                         if not answer:
                             break
                 # This case only happens when we are installing a splitted
