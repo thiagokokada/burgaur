@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 executable="burgaur"
 version=$(grep -oP '__version__ = \K(.*)' "${executable}" | sed 's|"||g')
 current_date=$(date +'%Y-%m-%d')
