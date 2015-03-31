@@ -251,6 +251,7 @@ class Burgaur(object):
                         subprocess.check_call(pacman_cmd + [pkg])
                 else:
                     subprocess.check_call(makepkg_cmd)
+                os.chdir(target_dir)
         except subprocess.CalledProcessError:
             raise BurgaurError("error while installing package {}"
                                .format(package))
@@ -268,7 +269,7 @@ class Burgaur(object):
 
             for package in packages:
                 try:
-                    self.make_install(package)
+                    self.make_install(package, install_deps=True)
                 except BurgaurError as e:
                     # Ignore make_install errors in this case
                     print_format_or_exc(e)
@@ -613,7 +614,7 @@ def main():
         for target in args.force_update:
             burgaur.force_update(target)
         for package in args.make_install:
-            burgaur.make_install(package, True)
+            burgaur.make_install(package, install_deps=True)
         if args.system_update:
             burgaur.system_update()
         if args.search_install:
