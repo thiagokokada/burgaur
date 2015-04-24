@@ -69,7 +69,7 @@ class Burgaur(object):
     pacman_path -- path to pacman (default: pacman)
     makepkg_path -- path to makepkg (default: makepkg)
     cower_path -- path to cower (default: cower)
-    mc_path -- path to pacman (default: mc)
+    fm_path -- path to pacman (default: mc)
     encoding -- system encoding from LANG environmental variable
     (default: utf8)
     tempdir -- location of temporary directory used to build packages.
@@ -87,14 +87,14 @@ class Burgaur(object):
     """
 
     def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
-                 cower_path="cower", mc_path="mc", encoding="utf8",
+                 cower_path="cower", fm_path="mc", encoding="utf8",
                  tempdir=None, cower_raw_options=None, noinstall=False,
                  nodelete=False, noconfirm=False):
         self._min_cower_version = 12
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
-        self.mc_path = mc_path
+        self.fm_path = fm_path
         self.encoding = encoding
         self.tempdir = tempdir
         self.cower_cmd = [self.cower_path]
@@ -260,7 +260,7 @@ class Burgaur(object):
                     # Until user answer "No" we keep asking for view in mc.
                     # This is similar to what yaourt does, and is more secure.
                     while True:
-                        answer = self.view_in_mc(package_dir)
+                        answer = self.view_in_fm(package_dir)
                         if not answer:
                             break
                 # This case only happens when we are installing a splitted
@@ -389,8 +389,8 @@ class Burgaur(object):
         else:
             print_warn("No package selected.")
 
-    def view_in_mc(self, package, directory="."):
-        """"View package contents with Midnight Commander.
+    def view_in_fm(self, package, directory="."):
+        """"View package contents with a user selected File Manager.
 
         Returns True if user viewed package in mc or False if not.
 
@@ -398,14 +398,15 @@ class Burgaur(object):
         package -- package name
         directory -- directory to open in mc (default: ".")
         """
-        if self.mc_path:  # only runs if mc is installed, otherwise ignore it
+        if self.fm_path:  # only runs if fm is installed, otherwise ignore it
             query = query_yes_no("Do you want to view package {} contents "
-                                 "in mc?".format(package), default="yes")
+                                 "in file manager?".format(package),
+                                 default="yes")
             if query:
-                subprocess.call([self.mc_path, directory])
+                subprocess.call([self.fm_path, directory])
             return query
         else:
-            print_warn("Midnight Commander is not installed, skipping "
+            print_warn("File manager is not installed, skipping "
                        "package {} checks.".format(package))
             return False
 
@@ -620,12 +621,13 @@ def main():
     pacman_path = find_executable("pacman")
     makepkg_path = find_executable("makepkg")
     cower_path = find_executable("cower")
-    mc_path = find_executable("mc")  # mc is an optional dependency
     encoding = os.getenv("LANG", ".utf8").split(".")[1]
     # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to
     # compile big packages completely on RAM, so by default we use /var/tmp.
     # The user may overrides this setting by setting BURGAUR_TARGET_DIR.
     tempdir = os.getenv("BURGAUR_TARGET_DIR", "/var/tmp")
+    fm = os.getenv("BURGAUR_FILE_MANAGER", "mc")
+    fm_path = find_executable(fm)
 
     # Sanity checks
     if os.geteuid() == 0:
@@ -644,7 +646,7 @@ def main():
                     .format(cower_url))
 
     # Initialize main class
-    burgaur = Burgaur(pacman_path, makepkg_path, cower_path, mc_path,
+    burgaur = Burgaur(pacman_path, makepkg_path, cower_path, fm_path,
                       encoding, tempdir, args.cower_raw_options,
                       args.noinstall, args.nodelete, args.noconfirm)
 
