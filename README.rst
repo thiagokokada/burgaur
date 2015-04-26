@@ -86,9 +86,9 @@ CONFIGURATION
 All configuration is done by setting environmental variables.
 
 * ``BURGAUR_TARGET_DIR``: set temporary directory for building packages
-  (default: /var/tmp).
+  (default: ``/var/tmp``).
 * ``BURGAUR_FILE_MANAGER``: set desired file manager to verify packages
-  before building it (default: mc).
+  before building it (default: ``mc``).
 
 
 EXAMPLES
