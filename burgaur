@@ -69,7 +69,7 @@ class Burgaur(object):
     pacman_path -- path to pacman (default: pacman)
     makepkg_path -- path to makepkg (default: makepkg)
     cower_path -- path to cower (default: cower)
-    fm_path -- path to pacman (default: mc)
+    fm_path -- path to file manager (default: mc)
     encoding -- system encoding from LANG environmental variable
     (default: utf8)
     tempdir -- location of temporary directory used to build packages.
