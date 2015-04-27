@@ -390,7 +390,7 @@ class Burgaur(object):
             print_warn("No package selected.")
 
     def view_in_fm(self, package, directory="."):
-        """"View package contents with a user selected File Manager.
+        """"View package contents with an user selected File Manager.
 
         Returns True if user viewed package in mc or False if not.
 
@@ -432,7 +432,7 @@ class Burgaur(object):
             return None
 
     def _get_cower_version(self):
-        """Returns cower version as a integer"""
+        """Returns cower version as an integer"""
         cmd = [self.cower_path, "--version"]
         output = subprocess.check_output(cmd)
         try:
