@@ -357,6 +357,7 @@ class Burgaur(object):
         packages = self.search_package(target)
         if not packages:
             print_warn("No packages with target {} found.".format(target))
+            return
 
         for i, package in enumerate(packages, start=1):
             position = colored(str(i) + ")", attrs=["bold"])
