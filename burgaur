@@ -615,7 +615,7 @@ def main():
         # "auto" or anything else
         if not sys.stdout.isatty():
             _disable_termcolor()
-        if not color == "auto"
+        if not color == "auto":
             print_warn("Invalid option --color={}. Assuming "
                        "--color=auto".format(color))
 
