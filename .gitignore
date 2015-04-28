@@ -1,6 +1,7 @@
 # Ignore files created by PKGBUILD
 *pkg*
 *src*
+*.tar*
 burgaur/
 
 # Byte-compiled / optimized / DLL files
