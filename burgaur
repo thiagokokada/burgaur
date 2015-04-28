@@ -115,18 +115,16 @@ class Burgaur(object):
         """
         cmd = self.cower_cmd + ["--color=never", "--update", "--quiet"]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        out, err = process.communicate()
+        out = process.communicate()[0]
 
-        # According to issue https://github.com/falconindy/cower/issues/32,
-        # cower returns 1 if there is packages to update, 0 if there is
-        # nothing, and anything else if there is a error.
-        if process.returncode == 1:
+        # cower will exit with a non-zero status if and only if updates are
+        # available. See url below for details.
+        # https://github.com/falconindy/cower/blob/master/README.pod
+        if not process.returncode == 0:
             packages = out.decode(encoding=self.encoding).split("\n")[:-1]
             return packages
-        elif process.returncode == 0:
-            return None
         else:
-            raise BurgaurError("cower could not get packages to update")
+            return None
 
     def force_update(self, target):
         """Force update of packages from AUR with target name.
