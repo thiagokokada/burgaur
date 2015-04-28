@@ -617,7 +617,7 @@ def main():
             _disable_termcolor()
         if not color == "auto":
             print_warn("Invalid option --color={}. Assuming "
-                       "--color=auto".format(color))
+                       "--color=auto.".format(color))
 
     # Get executable paths and some important environmental vars
     pacman_path = find_executable("pacman")
