@@ -606,17 +606,18 @@ def main():
         sys.exit(1)
     args = parser.parse_args()
 
-    # Yeah, I know, ugly global variable. But I don't know a better way to
-    # handle blessings without passing even uglier instancies to every
-    # class/function.
-    if args.color.lower() == "always":
+    color = args.color.lower()
+    if color == "always":
         pass
-    elif args.color.lower() == "auto":
-        # This is the default, btw
+    elif color == "never":
+        _disable_termcolor()
+    else:
+        # "auto" or anything else
         if not sys.stdout.isatty():
             _disable_termcolor()
-    elif args.color.lower() == "never":
-        _disable_termcolor()
+        if not color == "auto"
+            print_warn("Invalid option --color={}. Assuming "
+                       "--color=auto".format(color))
 
     # Get executable paths and some important environmental vars
     pacman_path = find_executable("pacman")
