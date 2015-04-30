@@ -161,7 +161,8 @@ class Burgaur(object):
 
             self.make_install(*packages_to_update, install_deps=True)
         else:
-            print_warn("No packages with target {} found.".format(target))
+            print_warn("No packages with target(s) {} found."
+                       .format(", ".join(targets)))
 
     def make_install(self, *packages, install_deps=False):
         """Download, make and install packages.
@@ -178,6 +179,7 @@ class Burgaur(object):
         package (default: False)
         """
         target_dirs = []
+        target_dir = None
         try:
             for package in packages:
                 target_dir = self._download_package(package, install_deps)
