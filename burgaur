@@ -167,9 +167,9 @@ class Burgaur(object):
     def make_install(self, package, install_deps=False):
         """Download, make and install package.
 
-        This function creates a temporary directory, downloads the
-        PKGBUILD using 'cower -d' and make/install the package using
-        'makepkg -si' command.
+        This function creates a temporary directory, downloads a
+        package to it using 'cower -d' and make/install the package
+        using 'makepkg -si' command.
 
         Keyword arguments:
         package -- desired package to be installed (must match a
@@ -178,11 +178,12 @@ class Burgaur(object):
         download AUR dependencies and install them before the main
         package (default: False)
         """
+
         try:
             target_dir = self._download_package(package, install_deps)
             self._review_package(target_dir)
-            self._build_package(package, target_dir)
-            self._install_package(package, target_dir)
+            self._build_package(target_dir)
+            self._install_package(target_dir)
         except:
             # Need to re-raise here, so we can get any error that may
             # be caused by the functions above.
@@ -352,10 +353,9 @@ class Burgaur(object):
                         break
             os.chdir(target_dir)
 
-    def _build_package(self, package, target_dir):
+    def _build_package(self, target_dir):
         """Build package (and it's dependencies)
 
-        package -- package name.
         target_dir -- directory containing package.
         """
         makepkg_cmd = [self.makepkg_path, "--syncdeps"]
@@ -366,16 +366,15 @@ class Burgaur(object):
                 subprocess.check_call(makepkg_cmd)
             except subprocess.CalledProcessError:
                 raise BurgaurError("error while trying to build package {}"
-                                   .format(package))
+                                   .format(package_dir))
             os.chdir(target_dir)
 
-    def _install_package(self, package, target_dir):
+    def _install_package(self, target_dir):
         """Install package (and it's dependencies)
 
         It currently installs them in any order, so it uses --nodeps to
         make sure everything is alright.
 
-        package -- package name.
         target_dir -- directory containing package.
         """
         # Using --nodeps here, since we may install the main package before
@@ -388,7 +387,7 @@ class Burgaur(object):
                 subprocess.check_call(pacman_cmd + glob.glob("*.pkg*"))
             except subprocess.CalledProcessError:
                 raise BurgaurError("error while trying to install package {}"
-                                   .format(package))
+                                   .format(package_dir))
             os.chdir(target_dir)
 
     def _get_package_base(self, package):
