@@ -640,6 +640,8 @@ def main():
         print_error("You should run {} as a non-root user."
                     .format(sys.argv[0]))
         sys.exit(1)
+    if not sudo_path:
+        print_error("Could not find sudo installed. Please install it first.")
     if not pacman_path:
         print_error("Could not find pacman installed. Are you using "
                     "Arch Linux?")
