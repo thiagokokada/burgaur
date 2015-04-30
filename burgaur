@@ -128,8 +128,8 @@ class Burgaur(object):
         else:
             return None
 
-    def force_update(self, target):
-        """Force update of packages from AUR with target name.
+    def force_update(self, *targets):
+        """Force update of packages from AUR with target(s) name(s).
 
         The user case of this function is to update VCS packages. For
         example, you could pass target="-git", and since the majority
@@ -148,49 +148,54 @@ class Burgaur(object):
         installed_packages = subprocess.check_output(cmd)
         installed_packages = installed_packages.decode(encoding=self.encoding)
         installed_packages = installed_packages.split("\n")[:-1]
-        filtered_packages = [x for x in installed_packages
-                             if x.find(target) >= 0]
 
-        if filtered_packages:
+        packages_to_update = []
+        for target in targets:
+            filtered_packages = [x for x in installed_packages
+                                 if x.find(target) >= 0]
+            packages_to_update += filtered_packages
+
+        if packages_to_update:
             print("Packages to update:", end=" ")
-            print_info(", ".join(filtered_packages))
+            print_info(", ".join(packages_to_update))
 
-            for package in filtered_packages:
-                try:
-                    self.make_install(package)
-                except BurgaurError as err:
-                    # Ignore make_install errors in this case
-                    print_format_or_exc(err)
+            self.make_install(*packages_to_update, install_deps=True)
         else:
             print_warn("No packages with target {} found.".format(target))
 
-    def make_install(self, package, install_deps=False):
-        """Download, make and install package.
+    def make_install(self, *packages, install_deps=False):
+        """Download, make and install packages.
 
         This function creates a temporary directory, downloads a
         package to it using 'cower -d' and make/install the package
         using 'makepkg -si' command.
 
         Keyword arguments:
-        package -- desired package to be installed (must match a
+        packages -- desired packages to be installed (must match a
         package name on AUR)
         install_deps -- use cower '-dd' instead of only '-d' to
         download AUR dependencies and install them before the main
         package (default: False)
         """
-
+        target_dirs = []
         try:
-            target_dir = self._download_package(package, install_deps)
-            self._review_package(target_dir)
-            self._build_package(target_dir)
-            self._install_package(target_dir)
+            for package in packages:
+                target_dir = self._download_package(package, install_deps)
+                target_dirs.append(target_dir)
+            for target_dir in target_dirs:
+                self._review_package(target_dir)
+            for target_dir in target_dirs:
+                self._build_package(target_dir)
+            for target_dir in target_dirs:
+                self._install_package(target_dir)
         except:
             # Need to re-raise here, so we can get any error that may
             # be caused by the functions above.
             raise
         finally:
-            print_info("Removing directory {}".format(target_dir))
-            rmtree(target_dir)
+            for target_dir in target_dirs:
+                print_info("Removing directory {}".format(target_dir))
+                rmtree(target_dir)
 
     def system_update(self):
         """Updates all AUR packages that have updates."""
@@ -198,13 +203,7 @@ class Burgaur(object):
         if packages:
             print("Packages to update:", end=" ")
             print_info(", ".join(packages))
-
-            for package in packages:
-                try:
-                    self.make_install(package, install_deps=True)
-                except BurgaurError as err:
-                    # Ignore make_install errors in this case
-                    print_format_or_exc(err)
+            self.make_install(*packages, install_deps=True)
         else:
             print_ok("All packages are up-to-date.")
 
@@ -282,15 +281,17 @@ class Burgaur(object):
             print(position, category + name, maintainer, version, votes,
                   description)
 
-        selected_packages = parse_int_from_input("Select packages (use comma "
-                                                 "to select multiple packages,"
-                                                 " dash for ranges): ")
+        selected_index = parse_int_from_input("Select packages (use comma to "
+                                              "select multiple packages, "
+                                              "dash for ranges): ")
 
-        if selected_packages:
-            for i in selected_packages:
-                if i < 1:
+        if selected_index:
+            selected_packages = []
+            for index in selected_index:
+                if index < 1:
                     raise ValueError("invalid zero/negative value")
-                self.make_install(packages[i - 1]["name"], True)
+                selected_packages.append(packages[index - 1]["name"])
+            self.make_install(*selected_packages, install_deps=True)
         else:
             print_warn("No package selected.")
 
@@ -383,11 +384,10 @@ class Burgaur(object):
         os.chdir(target_dir)
         for package_dir in os.listdir():
             os.chdir(package_dir)
-            try:
-                subprocess.check_call(pacman_cmd + glob.glob("*.pkg*"))
-            except subprocess.CalledProcessError:
-                raise BurgaurError("error while trying to install package {}"
-                                   .format(package_dir))
+            # We ignore errors during install since the user may choose to
+            # not install package (and pacman return non-zero exit code in
+            # this case).
+            subprocess.call(pacman_cmd + glob.glob("*.pkg*"))
             os.chdir(target_dir)
 
     def _get_package_base(self, package):
@@ -659,10 +659,10 @@ def main():
             burgaur.system_update()
         if args.search_install:
             burgaur.search_install(args.search_install)
-        for target in args.force_update:
-            burgaur.force_update(target)
-        for package in args.make_install:
-            burgaur.make_install(package, install_deps=True)
+        if args.force_update:
+            burgaur.force_update(*args.force_update)
+        if args.make_install:
+            burgaur.make_install(*args.make_install, install_deps=True)
     except KeyboardInterrupt:
         print_error("\nUser cancelled operation.")
         sys.exit(1)
