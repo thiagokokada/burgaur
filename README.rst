@@ -7,9 +7,9 @@ A delicious AUR helper. Made from cower.
 ----------------------------------------
 
 :Author: thiago.mast3r@gmail.com
-:Date: 2015-03-31
+:Date: 2015-04-30
 :Copyright: Thiago Kenji Okada
-:Version: 1.3
+:Version: 2.0
 :Manual section: 1
 :Manual group: system
 
@@ -23,14 +23,27 @@ SYSNOPSIS
 DESCRIPTION
 ===========
 
-Burgaur is an AUR helper based on and strictly a superset of cower. It automates
-of boring tasks that in cower you need to do by hand, like updating all your AUR
-system packages or installing a new package from AUR including its dependencies.
+**Burgaur** is an AUR helper based on and strictly a superset of ``cower``. It
+automates boring tasks that in cower you need to do by hand, like updating all
+your AUR system packages, or installing a new package from AUR including its
+dependencies.
 
-It doesn't try to be everything (i.e. like yaourt). Instead, it simple assume
+It doesn't try to be everything (i.e. ``yaourt``). Instead, it simple assume
 that there is already a better tool to do some job and only tries to complement
 other tools.
 
+It's also have a better behavior with multiple packages than most AUR helpers,
+based on the behavior of ``pacaur``. Basically, instead of the traditional
+"review one package, build one package, install one package, rise and repeat",
+``burgaur`` does the following:
+
+- Review everything
+- Lean back.
+- Build everything
+- Install everything.
+
+This can speed-up things considerably when you're building large packages or
+a great number of them.
 
 OPTIONS
 =======
