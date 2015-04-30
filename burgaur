@@ -1,5 +1,5 @@
 #!/usr/bin/python -O
-# pylint: disable=invalid-name, global-statement, broad-except
+# pylint: disable=invalid-name
 
 """burgaur - A delicious AUR helper. Made from cower.
 
@@ -529,6 +529,7 @@ def print_format_or_exc(err):
 
 def _disable_termcolor():
     """Disable termcolor by replacing termcolor functions with dummies."""
+    # pylint: disable=global-statement
     global colored, cprint
     colored = dummy_colored
     cprint = dummy_cprint
@@ -600,6 +601,7 @@ def _argparser():
 
 def main():
     """Main program function"""
+    # pylint: disable=broad-except, too-many-locals, too-many-branches
     parser = _argparser()
     if len(sys.argv) == 1:
         parser.print_usage()
