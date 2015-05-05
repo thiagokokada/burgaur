@@ -58,7 +58,7 @@ optional arguments
                                     WARNING: no sanity check, may break things
 
 --noconfirm                         skip confirmation prompts during install
-                                    process, passed to pacman/makepkg too
+                                    process, passed to pacman/makepkg too,
                                     WARNING: may be unsafe
 
 --nodelete                          do not remove temporary build directory
@@ -66,6 +66,9 @@ optional arguments
 
 --noinstall                         do not install packages after build,
                                     assume '--nodelete'
+
+--nobuild                           do not build packages,
+                                    assume '--nodelete' and '--noinstall'
 
 -c, --color WHEN                    use colored output. WHEN is 'never',
                                     'always' or 'auto' (default)
