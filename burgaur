@@ -323,9 +323,11 @@ class Burgaur(object):
 
         Returns directory that the package was downloaded.
 
+        Keyword arguments:
         package -- target package to download.
         install_deps -- download package dependencies too
-        (default: False)"""
+        (default: False)
+        """
         target_dir = tempfile.mkdtemp(prefix="burgaur-", dir=self.tempdir)
         cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
@@ -342,10 +344,11 @@ class Burgaur(object):
     def _review_package(self, target_dir):
         """Review package (and it's dependencies) using a File Manager
 
+        Keyword arguments:
         target_dir -- directory containing package.
         """
         os.chdir(target_dir)
-        for package_dir in os.listdir():
+        for package_dir in list_dirs_by_ctime(reverse=True):
             os.chdir(package_dir)
             if not self.noconfirm:
                 # Until user answer "No" we keep asking for view in mc.
@@ -359,11 +362,12 @@ class Burgaur(object):
     def _build_package(self, target_dir):
         """Build package (and it's dependencies)
 
+        Keyword arguments:
         target_dir -- directory containing package.
         """
         makepkg_cmd = [self.makepkg_path, "--syncdeps"]
         os.chdir(target_dir)
-        for package_dir in os.listdir():
+        for package_dir in list_dirs_by_ctime(reverse=True):
             os.chdir(package_dir)
             try:
                 subprocess.check_call(makepkg_cmd)
@@ -378,13 +382,14 @@ class Burgaur(object):
         It currently installs them in any order, so it uses --nodeps to
         make sure everything is alright.
 
+        Keyword arguments:
         target_dir -- directory containing package.
         """
         # Using --nodeps here, since we may install the main package before
         # it's dependencies
         pacman_cmd = [self.sudo_path, self.pacman_path, "--upgrade", "--nodeps"]
         os.chdir(target_dir)
-        for package_dir in os.listdir():
+        for package_dir in list_dirs_by_ctime(reverse=True):
             os.chdir(package_dir)
             # We ignore errors during install since the user may choose to
             # not install package (and pacman return non-zero exit code in
@@ -513,6 +518,17 @@ def parse_int_from_input(prompt=None):
                        "multiple values using comma (i.e.: 1,2,3) or a range "
                        "of values using dash (i.e.: 1-3).")
     return result
+
+
+def list_dirs_by_ctime(reverse=False):
+    """Return files in directory ordered by ctime
+    
+    Keyword arguments:
+    reverse -- returns decrescent order
+    """
+    files = os.listdir()
+    files.sort(key=lambda x: os.path.getctime(x), reverse=reverse)
+    return files
 
 
 def print_format_or_exc(err):
