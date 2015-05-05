@@ -81,8 +81,8 @@ class Burgaur(object):
     def __init__(self, pacman_path="pacman", makepkg_path="makepkg",
                  cower_path="cower", fm_path="mc", sudo_path="sudo",
                  encoding="utf8", tempdir=None, cower_raw_options=None,
-                 noinstall=False, nodelete=False, noconfirm=False,
-                 nobuild=False):
+                 noinstall=False, nodelete=False, nobuild=False,
+                 noconfirm=False):
         self._min_cower_version = 12
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
@@ -669,8 +669,8 @@ def main():
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, fm_path,
                       sudo_path, encoding, tempdir, args.cower_raw_options,
-                      args.noinstall, args.nodelete, args.noconfirm,
-                      args.nobuild)
+                      args.noinstall, args.nodelete, args.nobuild,
+                      args.noconfirm)
 
     try:
         if args.system_update:
