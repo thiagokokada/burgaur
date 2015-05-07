@@ -11,7 +11,7 @@ depends=('cower' 'pacman' 'python' 'python-termcolor' 'sudo')
 optdepends=('mc: review packages before installing')
 source=("${url}/archive/${pkgver}.tar.gz")
 install='burgaur.install'
-sha256sums=('b986751cd8bbab236aabd7ff1e21d47b407ca80a0c03a3fdb1ed7206437f0045')
+sha256sums=('051c29ce8f27772531bfccc696d99aaf832d3c5aaa804c06f85146d60d4f2e05')
 conflicts=('burgaur-git')
 
 package() {
