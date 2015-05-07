@@ -7,7 +7,7 @@ A delicious AUR helper. Made from cower.
 ----------------------------------------
 
 :Author: thiago.mast3r@gmail.com
-:Date: 2015-04-30
+:Date: 2015-05-06
 :Copyright: Thiago Kenji Okada
 :Version: 2.0
 :Manual section: 1
@@ -55,11 +55,11 @@ optional arguments
 -h, --help                          show this help message and exit
 
 --cower-raw-options OPTIONS         pass arguments directly to cower,
-                                    WARNING: no sanity check, may break things
+                                    **no sanity check, may break things**
 
 --noconfirm                         skip confirmation prompts during install
                                     process, passed to pacman/makepkg too,
-                                    WARNING: may be unsafe
+                                    **may be unsafe**
 
 --nodelete                          do not remove temporary build directory
                                     after install
