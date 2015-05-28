@@ -28,13 +28,13 @@ automates boring tasks that in cower you need to do by hand, like updating all
 your AUR system packages, or installing a new package from AUR including its
 dependencies.
 
-It doesn't try to be everything (i.e. ``yaourt``). Instead, it simple assume
+It doesn't try to be everything (i.e. ``yaourt``). Instead, it simply assumes
 that there is already a better tool to do some job and only tries to complement
 other tools.
 
-It's also have a better behavior with multiple packages than most AUR helpers,
+It also has a better behavior with multiple packages than most AUR helpers,
 based on the behavior of ``pacaur``. Basically, instead of the traditional
-"review one package, build one package, install one package, rise and repeat",
+"review one package, build one package, install one package, rinse and repeat",
 ``burgaur`` does the following:
 
 - Review everything
@@ -42,7 +42,7 @@ based on the behavior of ``pacaur``. Basically, instead of the traditional
 - Build everything
 - Install everything.
 
-This can speed-up things considerably when you're building large packages or
+This can speed up things considerably when you're building large packages or
 a great number of them.
 
 OPTIONS
@@ -52,7 +52,7 @@ OPTIONS
 optional arguments
 ~~~~~~~~~~~~~~~~~~
 
--h, --help                          show this help message and exit
+-h, --help                          show this help message
 
 --cower-raw-options OPTIONS         pass arguments directly to cower,
                                     **no sanity check, may break things**
@@ -79,9 +79,7 @@ optional arguments
 update
 ~~~~~~
 
--fu, --force-update TARGET          force update of installed AUR packages with
-                                    target name, useful for updating VCS
-                                    packages
+-fu, --force-update TARGET          update TARGET unconditionally
 
 -su, --system-update                update all AUR packages
 
@@ -89,7 +87,7 @@ update
 install
 ~~~~~~~
 
--mi, --make-install PACKAGE         make and install package from AUR, including
+-mi, --make-install TARGET         make and install package from AUR, including
                                     dependencies
 
 -si, --search-install TARGET        list all packages with target name and let
@@ -110,38 +108,36 @@ All configuration is done by setting environmental variables.
 EXAMPLES
 ========
 
-To update all out-of-date packages from AUR (excluding VCS packages) you can
-run:
+Update all AUR packages
 
 ::
 
     $ burgaur -su
 
 
-To force update all packages ending with -git (like "burgaur-git"), you can
-run:
+Force-update all packages that contain '-git'
 
 ::
 
     $ burgaur -fu=-git  # The equals (=) is necessary because of the dash (-)
 
 
-To force update only one package, you can do:
+Force-update a package
 
 ::
 
     $ burgaur -fu burgaur-git
 
 
-To install a package that you know the name:
+Install a package
 
 ::
 
     $ burgaur -mi package
 
 
-For problematic packages, you can temporary change the directory where packages
-will be build (by default, on ``/var/tmp``) and keep the result files for later
+For problematic packages, you can temporarily change 
+the package build directory (by default, on ``/var/tmp``) and keep the resulting files for later
 use using:
 
 ::
@@ -149,15 +145,14 @@ use using:
     $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --nodelete
 
 
-Or if you just want to build a package but to not install it:
+Or if you just want to build a package but not install it:
 
 ::
 
     $ BURGAUR_TARGET_DIR=mydir burgaur -mi package --noinstall
 
 
-To install a package that you only remember some information (like part of the
-package description):
+Search (and install) with cower
 
 ::
 
