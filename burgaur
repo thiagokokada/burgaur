@@ -200,9 +200,16 @@ class Burgaur(object):
             # be caused by the functions above.
             raise
         finally:
-            if not self.nodelete:
-                for target_dir in target_dirs:
-                    print_info("Removing directory {}".format(target_dir))
+            if self.nodelete:
+                return
+            for target_dir in target_dirs:
+                if self.noconfirm:
+                    delete = True
+                    print_info("Removing {} directory.".format(target_dir))
+                else:
+                    delete = query_yes_no("Remove {} directory?"
+                                          .format(target_dir), "yes")
+                if delete:
                     rmtree(target_dir)
 
     def system_update(self):
