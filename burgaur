@@ -379,7 +379,8 @@ class Burgaur(object):
         target_dir -- directory containing package.
         """
         makepkg_cmd = [self.makepkg_path, "--syncdeps"]
-        pacman_cmd = [self.sudo_path, self.pacman_path, "--upgrade", "--nodeps"]
+        pacman_cmd = [self.sudo_path, self.pacman_path,
+                      "--upgrade", "--nodeps"]
         if self.noconfirm:
             pacman_cmd += ["--noconfirm"]
         os.chdir(target_dir)
@@ -389,9 +390,9 @@ class Burgaur(object):
                 if not self.nobuild:
                     subprocess.check_call(makepkg_cmd)
                 if not self.noinstall:
-                    # We ignore errors during install since the user may choose to
-                    # not install package (and pacman return non-zero exit code in
-                    # this case).
+                    # We ignore errors during install since the user may
+                    # choose to not install package (and pacman return
+                    # non-zero exit code in this case).
                     subprocess.call(pacman_cmd + glob.glob("*.pkg*"))
             except subprocess.CalledProcessError:
                 raise BurgaurError("error while trying to build package {}"
