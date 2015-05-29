@@ -52,7 +52,7 @@ OPTIONS
 optional arguments
 ~~~~~~~~~~~~~~~~~~
 
--h, --help                          show this help message
+-h, --help                          show this help message and exit
 
 --cower-raw-options OPTIONS         pass arguments directly to cower,
                                     **no sanity check, may break things**
@@ -87,7 +87,7 @@ update
 install
 ~~~~~~~
 
--mi, --make-install TARGET         make and install package from AUR, including
+-mi, --make-install PACKAGE         make and install package from AUR, including
                                     dependencies
 
 -si, --search-install TARGET        list all packages with target name and let
@@ -136,9 +136,8 @@ Install a package
     $ burgaur -mi package
 
 
-For problematic packages, you can temporarily change 
-the package build directory (by default, on ``/var/tmp``) and keep the resulting files for later
-use using:
+For problematic packages, you can temporarily change the package build directory
+(by default, on ``/var/tmp``) and keep the resulting files for later use using:
 
 ::
 

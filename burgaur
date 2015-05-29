@@ -597,9 +597,7 @@ def _argparser():
     update = parser.add_argument_group("update")
     update.add_argument("-fu", "--force-update", metavar="TARGET",
                         nargs="+", default=[],
-                        help="force update of installed AUR packages with"
-                        "\ntarget name, useful for updating VCS packages"
-                        "\ni.e. '-fi=-git' should update all Git packages")
+                        help="update TARGET unconditionally")
     update.add_argument("-su", "--system-update", action="store_true",
                         help="update all AUR packages")
     install = parser.add_argument_group("install")
