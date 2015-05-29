@@ -7,7 +7,7 @@ A delicious AUR helper. Made from cower.
 ----------------------------------------
 
 :Author: thiago.mast3r@gmail.com
-:Date: 2015-05-06
+:Date: 2015-05-29
 :Copyright: Thiago Kenji Okada
 :Version: 2.0
 :Manual section: 1
