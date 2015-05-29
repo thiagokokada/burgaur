@@ -195,7 +195,11 @@ class Burgaur(object):
                 self._review_package(target_dir)
             for target_dir in target_dirs:
                 self._build_install_package(target_dir)
+            success = True
         except:
+            # Only preserve temporary directory in case of error (so the user
+            # may try to fix the problem manually)
+            success = False
             # Need to re-raise here, so we can get any error that may
             # be caused by the functions above.
             raise
@@ -203,7 +207,7 @@ class Burgaur(object):
             if self.nodelete:
                 return
             for target_dir in target_dirs:
-                if self.noconfirm:
+                if success or self.noconfirm:
                     delete = True
                     print_info("Removing {} directory.".format(target_dir))
                 else:
