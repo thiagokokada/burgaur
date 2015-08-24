@@ -83,7 +83,7 @@ class Burgaur(object):
                  encoding="utf8", tempdir=None, cower_raw_options=None,
                  noinstall=False, nodelete=False, nobuild=False,
                  noconfirm=False):
-        self._min_cower_version = 12
+        self._min_cower_version = 13
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
@@ -402,27 +402,6 @@ class Burgaur(object):
                 raise BurgaurError("error while trying to build package {}"
                                    .format(package_dir))
             os.chdir(target_dir)
-
-    def _get_package_base(self, package):
-        """Get package base name.
-
-        This is an ugly hack until this issue is solved:
-        https://github.com/falconindy/cower/issues/105
-
-        Keyword arguments:
-        package -- package to get PackageBase information
-        """
-        cmd = self.cower_cmd + ["--color=never", "--info", package]
-        try:
-            out = subprocess.check_output(cmd).decode(self.encoding)
-        except subprocess.CalledProcessError:
-            raise BurgaurError("error while getting package {} info"
-                               .format(package))
-        result = re.findall(r"PackageBase\s+: (.+)", out)
-        if result:
-            return result[0]
-        else:
-            return None
 
     def _get_cower_version(self):
         """Returns cower version as an integer"""
