@@ -39,7 +39,7 @@ except ImportError:
 
 __author__ = "Thiago Kenji Okada"
 __license__ = "MIT"
-__version__ = "2.0"
+__version__ = "2.1"
 __maintainer__ = "Thiago Kenji Okada"
 __email__ = "thiago DOT mast3r AT gmail DOT com"
 __status__ = "Stable"
@@ -243,8 +243,9 @@ class Burgaur(object):
         """
         package_info = ["name", "version", "description",
                         "maintainer", "votes", "out_of_date"]
-        # output: package;;1.0.0;;package description;;maintainer;;123;;no\n
-        cmd = self.cower_cmd + ["--format=%n;;%v;;%d;;%m;;%o;;%t\n",
+        # output: package^_1.0.0^_package description^_maintainer^_123^_no\n
+        # \x1f is ASCII's unit separator, so it should be safe to parse
+        cmd = self.cower_cmd + ["--format=%n\x1f%v\x1f%d\x1f%m\x1f%o\x1f%t\n",
                                 "--color=never",
                                 "--search", target]
         process = subprocess.Popen(cmd,
@@ -258,7 +259,7 @@ class Burgaur(object):
         result = []
         packages = out.decode(self.encoding).split("\n")[:-1]
         for package in packages:
-            entry = zip(package_info, package.split(";;"))
+            entry = zip(package_info, package.split("\x1f"))
             result.append(dict(entry))
         return result
 
