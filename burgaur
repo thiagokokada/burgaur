@@ -241,10 +241,10 @@ class Burgaur(object):
         Keyword arguments:
         target -- target for 'cower -s target'
         """
-        package_info = ["category", "name", "version", "description",
+        package_info = ["name", "version", "description",
                         "maintainer", "votes", "out_of_date"]
-        # output: package++1.0.0++package description++maintainer++123\n
-        cmd = self.cower_cmd + ["--format=%c;;%n;;%v;;%d;;%m;;%o;;%t\n",
+        # output: package;;1.0.0;;package description;;maintainer;;123;;no\n
+        cmd = self.cower_cmd + ["--format=%n;;%v;;%d;;%m;;%o;;%t\n",
                                 "--color=never",
                                 "--search", target]
         process = subprocess.Popen(cmd,
@@ -283,8 +283,7 @@ class Burgaur(object):
 
         for i, package in enumerate(packages, start=1):
             position = colored(str(i) + ")", attrs=["bold"])
-            category = colored(package["category"] + "/", "magenta",
-                               attrs=["bold"])
+            category = colored("aur/", "magenta", attrs=["bold"])
             name = colored(package["name"], attrs=["bold"])
             maintainer = "by " + colored(package["maintainer"], "yellow",
                                          attrs=["bold"])
