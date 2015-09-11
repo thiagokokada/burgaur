@@ -345,7 +345,8 @@ class Burgaur(object):
         install_deps -- download package dependencies too
         (default: False)
         """
-        target_dir = tempfile.mkdtemp(prefix="burgaur-", dir=self.tempdir)
+        target_dir = tempfile.mkdtemp(prefix="burgaur-{}-".format(package),
+                dir=self.tempdir)
         cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
         if install_deps:
