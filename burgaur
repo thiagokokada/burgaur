@@ -630,7 +630,14 @@ def main():
     makepkg_path = find_executable("makepkg")
     cower_path = find_executable("cower")
     sudo_path = find_executable("sudo")
-    encoding = os.getenv("LANG", ".utf8").split(".")[1]
+    encoding = os.getenv("LANG", ".utf8")
+    if "." not in encoding:
+        print_error("Your environment variable \"LANG\" is set to \"{}\" "
+                    "which is not a valid encoding. "
+                    "See https://wiki.archlinux.org/index.php/locale on how "
+                    "to set a valid locale.".format(encoding))
+        sys.exit(1)
+    encoding = encoding.split(".")[1]
     # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to
     # compile big packages completely on RAM, so by default we use /var/tmp.
     # The user may overrides this setting by setting BURGAUR_TARGET_DIR.
