@@ -1,0 +1,27 @@
+#!/bin/bash
+
+_burgaur() {
+    local cur=${COMP_WORDS[COMP_CWORD]}
+    local prev=${COMP_WORDS[COMP_CWORD - 1]}
+    local longopts=(--color --force-update --make-install --noconfirm --noinstall --system-update
+		    --cower-raw-options --help --nobuild --nodelete --search-install --version)
+
+    case $cur in
+	--*)
+	    COMPREPLY=($(compgen -W '${longopts[*]}' -- "$cur"))
+	;;
+    esac
+
+    case $prev in
+	-fu|--force-update)
+	    COMPREPLY=($(compgen -W '$(pacman -Qqm 2>/dev/null)' -- "$cur"))
+	    return 0
+	    ;;
+	-mi|--make-install|-si|--search-install)
+	    COMPREPLY=($(compgen -W "$(cower -sq -- "$cur" 2>/dev/null)" -- "$cur"))
+	    return 0
+	    ;;
+    esac
+}
+
+complete -F _burgaur burgaur
