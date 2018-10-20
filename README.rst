@@ -6,7 +6,7 @@ burgaur
 A delicious AUR helper. Made from cower.
 ----------------------------------------
 
-:Author: thiago.mast3r@gmail.com
+:Author: thiagokokada@gmail.com
 :Date: 2018-10-20
 :Copyright: Thiago Kenji Okada
 :Version: 2.3
