@@ -83,7 +83,6 @@ class Burgaur(object):
                  encoding="utf8", tempdir=None, cower_raw_options=None,
                  noinstall=False, nodelete=False, nobuild=False,
                  noconfirm=False):
-        self._min_cower_version = 13
         self.pacman_path = pacman_path
         self.makepkg_path = makepkg_path
         self.cower_path = cower_path
@@ -107,10 +106,6 @@ class Burgaur(object):
             self.noinstall = False
             self.nodelete = nodelete
         self.noconfirm = noconfirm
-
-        if self._get_cower_version() < self._min_cower_version:
-            raise BurgaurError("burgaur needs cower version >={}"
-                               .format(self._min_cower_version))
 
     def check_updates(self):
         """Check available updates for AUR packages.
@@ -403,16 +398,6 @@ class Burgaur(object):
                 raise BurgaurError("error while trying to build package {}"
                                    .format(package_dir))
             os.chdir(target_dir)
-
-    def _get_cower_version(self):
-        """Returns cower version as an integer"""
-        cmd = [self.cower_path, "--version"]
-        output = subprocess.check_output(cmd)
-        try:
-            version = re.findall(r"[0-9]+", output.decode(self.encoding))[0]
-            return int(version)
-        except (IndexError, ValueError):
-            raise BurgaurError("could not find cower version")
 
 
 # Auxiliary functions
