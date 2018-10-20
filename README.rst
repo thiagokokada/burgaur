@@ -7,9 +7,9 @@ A delicious AUR helper. Made from cower.
 ----------------------------------------
 
 :Author: thiago.mast3r@gmail.com
-:Date: 2015-09-11
+:Date: 2018-10-20
 :Copyright: Thiago Kenji Okada
-:Version: 2.2
+:Version: 2.3
 :Manual section: 1
 :Manual group: system
 
@@ -38,9 +38,9 @@ based on the behavior of ``pacaur``. Basically, instead of the traditional
 ``burgaur`` does the following:
 
 - Review everything
-- Lean back.
+- Lean back
 - Build everything
-- Install everything.
+- Install everything
 
 This can speed up things considerably when you're building large packages or
 a great number of them.
