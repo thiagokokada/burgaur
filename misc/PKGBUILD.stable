@@ -12,7 +12,7 @@ makedepends=('python-setuptools')
 optdepends=('mc: review packages before installing')
 source=("${url}/archive/${pkgver}.tar.gz")
 install='burgaur.install'
-sha256sums=('395408a3dc9c3db2b5c200b8722a13a60898c861633b99e6e250186adffd1370')
+sha256sums=('ee8b32f4eb5d2427d2784c2f202cb19a4ab715323384e833d377ec41f1a9fe52')
 conflicts=('burgaur-git')
 
 package() {
