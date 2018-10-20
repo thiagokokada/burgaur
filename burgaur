@@ -57,7 +57,7 @@ class Burgaur(object):
 
     """Main burgaur class
 
-    Keyword arguments:
+    Arguments:
     pacman_path -- path to pacman (default: pacman)
     makepkg_path -- path to makepkg (default: makepkg)
     cower_path -- path to cower (default: cower)
@@ -173,7 +173,7 @@ class Burgaur(object):
         package to it using 'cower -d' and make/install the package
         using 'makepkg -si' command.
 
-        Keyword arguments:
+        Arguments:
         packages -- desired packages to be installed (must match a
         package name on AUR)
         install_deps -- use cower '-dd' instead of only '-d' to
@@ -233,7 +233,7 @@ class Burgaur(object):
         is hard-coded but it may be dynamically generated in the
         future.
 
-        Keyword arguments:
+        Arguments:
         target -- target for 'cower -s target'
         """
         package_info = ["name", "version", "description",
@@ -269,7 +269,7 @@ class Burgaur(object):
         There isn't many sanity checks of the user input. The user may
         install the same package twice, for example.
 
-        Keyword arguments:
+        Arguments:
         target -- target to search on AUR
         """
         packages = self.search_package(target)
@@ -314,7 +314,7 @@ class Burgaur(object):
 
         Returns True if user viewed package in mc or False if not.
 
-        Keyword arguments:
+        Arguments:
         package -- package name
         directory -- directory to open in mc (default: ".")
         """
@@ -335,13 +335,13 @@ class Burgaur(object):
 
         Returns directory that the package was downloaded.
 
-        Keyword arguments:
+        Arguments:
         package -- target package to download.
         install_deps -- download package dependencies too
         (default: False)
         """
         target_dir = tempfile.mkdtemp(prefix="burgaur-{}-".format(package),
-                dir=self.tempdir)
+                                      dir=self.tempdir)
         cower_cmd = self.cower_cmd + ["--download", package,
                                       "--target", target_dir]
         if install_deps:
@@ -357,7 +357,7 @@ class Burgaur(object):
     def _review_package(self, target_dir):
         """Review package (and it's dependencies) using a File Manager
 
-        Keyword arguments:
+        Arguments:
         target_dir -- directory containing package.
         """
         os.chdir(target_dir)
@@ -375,7 +375,7 @@ class Burgaur(object):
     def _build_install_package(self, target_dir):
         """Build package and install (including dependencies)
 
-        Keyword arguments:
+        Arguments:
         target_dir -- directory containing package.
         """
         makepkg_cmd = [self.makepkg_path, "--syncdeps"]
@@ -429,7 +429,7 @@ def query_yes_no(question, default=None):
     Modified version from http://stackoverflow.com/a/3041990, rewrite
     some parts to be more Pythonic.
 
-    Keyword arguments:
+    Arguments:
     question -- string present to the user
     default -- default answer if the user just hits enter; None doesn't
     assume anything (default: None).
@@ -465,7 +465,7 @@ def parse_int_from_input(prompt=None):
     comma ("1,2,5") or a range of values separated by dash ("2-8") or
     any combination of above ("1-2,3").
 
-    Keyword arguments:
+    Arguments:
     prompt -- prompt from input() function (default: None)
     """
     exclude_regex = re.compile(r"[^0-9,-]")
@@ -494,7 +494,7 @@ def parse_int_from_input(prompt=None):
 def list_dirs_by_ctime(reverse=False):
     """Return files in directory ordered by ctime
 
-    Keyword arguments:
+    Arguments:
     reverse -- returns decrescent order
     """
     files = os.listdir()
@@ -505,7 +505,7 @@ def list_dirs_by_ctime(reverse=False):
 def print_format_or_exc(err):
     """Print error formatted or stack trace if in debug mode.
 
-    Keyword arguments:
+    Arguments:
     err -- error message from exception
     """
     if __debug__:
@@ -521,6 +521,61 @@ def _disable_termcolor():
     global colored, cprint
     colored = dummy_colored
     cprint = dummy_cprint
+
+
+def _check_root():
+    """Check if user is root, exit in case of true, since running burgaur
+    as root is dangerous.
+    """
+    if os.geteuid() == 0:
+        print_error("You should run {} as a non-root user."
+                    .format(sys.argv[0]))
+        sys.exit(1)
+
+
+def _get_system_encoding():
+    """Get and validate system encoding (LANG env variable)."""
+    encoding = os.getenv("LANG", ".utf8")
+    if "." not in encoding:
+        print_error("Your environment variable \"LANG\" is set to \"{}\" "
+                    "which is not a valid encoding. "
+                    "See https://wiki.archlinux.org/index.php/locale on how "
+                    "to set a valid locale.".format(encoding))
+        sys.exit(1)
+    return encoding.split(".")[1]
+
+
+def _get_program_path(name):
+    """Check if program is in PATH. Returns the PATH of program in case of
+    success.
+
+    Arguments:
+    name -- name of the program
+    """
+    program_path = find_executable(name)
+    if not program_path:
+        print_error("Could not find {} installed. Please install it first."
+                    .format(name))
+        sys.exit(1)
+    return program_path
+
+
+def _parse_color_arg(color):
+    """Parse color command line argument
+
+    Arguments:
+    color -- color argument
+    """
+    if color == "always":
+        pass
+    elif color == "auto":
+        if not sys.stdout.isatty():
+            _disable_termcolor()
+    elif color == "never":
+        _disable_termcolor()
+    else:
+        print_warn("Invalid option --color={}. Assuming "
+                   "--color=auto.".format(color))
 
 
 # main() and auxiliary functions
@@ -590,39 +645,16 @@ def _argparser():
 
 def main():
     """Main program function"""
-    # pylint: disable=broad-except, too-many-locals, too-many-branches
-    parser = _argparser()
-    if len(sys.argv) == 1:
-        parser.print_usage()
-        sys.exit(1)
-    args = parser.parse_args()
-
-    color = args.color.lower()
-    if color == "always":
-        pass
-    elif color == "never":
-        _disable_termcolor()
-    else:
-        # "auto" or anything else
-        if not sys.stdout.isatty():
-            _disable_termcolor()
-        if not color == "auto":
-            print_warn("Invalid option --color={}. Assuming "
-                       "--color=auto.".format(color))
+    # Sanity check
+    _check_root()
 
     # Get executable paths and some important environmental vars
-    pacman_path = find_executable("pacman")
-    makepkg_path = find_executable("makepkg")
-    cower_path = find_executable("cower")
-    sudo_path = find_executable("sudo")
-    encoding = os.getenv("LANG", ".utf8")
-    if "." not in encoding:
-        print_error("Your environment variable \"LANG\" is set to \"{}\" "
-                    "which is not a valid encoding. "
-                    "See https://wiki.archlinux.org/index.php/locale on how "
-                    "to set a valid locale.".format(encoding))
-        sys.exit(1)
-    encoding = encoding.split(".")[1]
+    encoding = _get_system_encoding()
+    pacman_path = _get_program_path("pacman")
+    makepkg_path = _get_program_path("makepkg")
+    cower_path = _get_program_path("cower")
+    sudo_path = _get_program_path("sudo")
+
     # In Arch Linux, /tmp is mounted as tmpfs. It would be a bad idea to
     # compile big packages completely on RAM, so by default we use /var/tmp.
     # The user may overrides this setting by setting BURGAUR_TARGET_DIR.
@@ -630,23 +662,14 @@ def main():
     file_manager = os.getenv("BURGAUR_FILE_MANAGER", "mc")
     fm_path = find_executable(file_manager)
 
-    # Sanity checks
-    if os.geteuid() == 0:
-        print_error("You should run {} as a non-root user."
-                    .format(sys.argv[0]))
+    # Parse command line arguments
+    parser = _argparser()
+    if len(sys.argv) == 1:
+        parser.print_usage()
         sys.exit(1)
-    if not sudo_path:
-        print_error("Could not find sudo installed. Please install it first.")
-    if not pacman_path:
-        print_error("Could not find pacman installed. Are you using "
-                    "Arch Linux?")
-    if not makepkg_path:
-        print_error("Could not find makepkg installed. Are you using "
-                    "Arch Linux?")
-    if not cower_path:
-        cower_url = "https://aur.archlinux.org/packages/cower/"
-        print_error("Could not find cower installed. Install it from {}."
-                    .format(cower_url))
+    args = parser.parse_args()
+
+    _parse_color_arg(args.color.lower())
 
     # Initialize main class
     burgaur = Burgaur(pacman_path, makepkg_path, cower_path, fm_path,
@@ -654,6 +677,7 @@ def main():
                       args.noinstall, args.nodelete, args.nobuild,
                       args.noconfirm)
 
+    # Call class method depending of arguments
     try:
         if args.system_update:
             burgaur.system_update()
